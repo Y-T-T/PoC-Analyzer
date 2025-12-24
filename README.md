@@ -18,6 +18,13 @@ Unlike traditional SAST tools that search for *vulnerabilities* in code, PoC Ana
 
 ---
 
+## Demo
+
+![PoC Analyzer Demo](demo.png)
+*Figure: PoC Analyzer detecting a malicious script.*
+
+---
+
 ## Project Structure
 
 To ensure the analyzer works correctly, organize your directory as follows:
