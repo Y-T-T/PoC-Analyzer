@@ -131,7 +131,7 @@ The analyzer assigns a verdict based on the calculated **Risk Score**.
 | **C / C++** | `.c`, `.cpp`, `.h` | Shellcode loaders, Process injection, `system()` abuse |
 | **PHP** | `.php` | Webshells, Command Injection, File write |
 | **Java** | `.java` | Reflection attacks, JNI loading, Runtime execution |
-| **Shell** | `.sh` | `curl |
+| **Shell** | `.sh` | Reverse Shells, `curl`, `bash`, One-liners |
 | **Batch** | `.bat`, `.cmd` | `certutil` downloaders, Firewall tampering, Shadow Copy deletion |
 | **PowerShell** | `.ps1`, `.psm1` | Fileless attacks, AMSI Bypass, IEX execution |
 
