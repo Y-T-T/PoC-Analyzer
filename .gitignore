@@ -1,0 +1,6 @@
+.DS_Store
+.vscode/
+test
+test_PoC/
+__pycache__/
+*.pyc

@@ -1,0 +1,116 @@
+# ==========================================
+# PowerShell Threat Detection Rules
+# ==========================================
+
+rules:
+  # Regula 1: Detect PowerShell downloaders (High risk) -> Mark 90 points
+  - id: ps-suspicious-download
+    patterns:
+      - pattern-either:
+          - pattern-regex: "(?i)New-Object.*Net\\.WebClient"
+          - pattern-regex: "(?i)Invoke-WebRequest.*"
+          - pattern-regex: "(?i)iwr\\s+http"
+          - pattern-regex: "(?i)Start-BitsTransfer"
+    message: "[PS] Critical: PowerShell file downloader detected (WebClient/IWR/Bits)."
+    languages: [regex]
+    severity: ERROR
+    metadata:
+      risk_score: 90
+      category: malware-dropper
+
+  # Regula 2: Detect Invoke-Expression / IEX usage (Critical) -> Mark 100 points
+  - id: ps-invoke-expression
+    patterns:
+      - pattern-either:
+          - pattern-regex: "(?i)Invoke-Expression"
+          - pattern-regex: "(?i)\\biex\\b"
+    message: "[PS] Critical: 'Invoke-Expression' (IEX) detected. This is often used to run in-memory payloads."
+    languages: [regex]
+    severity: ERROR
+    metadata:
+      risk_score: 100
+      category: rce
+
+  # Regula 3: Detect PowerShell execution policy bypass (High risk) -> Mark 70 points
+  - id: ps-execution-policy-bypass
+    patterns:
+      - pattern-regex: "(?i)-Exec(utionPolicy)?\\s+(Bypass|Unrestricted)"
+    message: "[PS] High: Attempt to bypass Execution Policy."
+    languages: [regex]
+    severity: ERROR
+    metadata:
+      risk_score: 70
+      category: defense-evasion
+
+  # Regula 4: Detect hidden window execution (Medium risk) -> Mark 50 points
+  - id: ps-hidden-window
+    patterns:
+      - pattern-regex: "(?i)-w(indowstyle)?\\s+(hidden|1)"
+    message: "[PS] Medium: PowerShell launched with hidden window."
+    languages: [regex]
+    severity: WARNING
+    metadata:
+      risk_score: 50
+      category: defense-evasion
+
+  # Regula 5: Detect Base64 encoded commands (High risk) -> Mark 80 points
+  - id: ps-base64-encoding
+    patterns:
+      - pattern-either:
+          - pattern-regex: "(?i)FromBase64String"
+          - pattern-regex: "(?i)-Enc(odedCommand)?"
+    message: "[PS] High: Base64 encoded command execution detected."
+    languages: [regex]
+    severity: WARNING
+    metadata:
+      risk_score: 80
+      category: obfuscation
+
+  # Regula 6: Detect AMSI Bypass (Advanced) -> Mark 100 points
+  # Tip: AMSI (Antimalware Scan Interface) is a Windows feature that helps detect malicious scripts.
+  - id: ps-amsi-bypass
+    patterns:
+      - pattern-either:
+          - pattern-regex: "(?i)System\\.Management\\.Automation\\.AmsiUtils"
+          - pattern-regex: "(?i)amsiInitFailed"
+    message: "[PS] Critical: Attempt to bypass AMSI (Antimalware Scan Interface) detected."
+    languages: [regex]
+    severity: ERROR
+    metadata:
+      risk_score: 100
+      category: defense-evasion
+
+  # Regula 7: Detect Memory Injection (Critical) -> Mark 95 points
+  - id: ps-memory-injection
+    patterns:
+      - pattern-either:
+          - pattern-regex: "(?i)(VirtualAlloc|WriteProcessMemory|CreateRemoteThread|QueueUserAPC)"
+          - pattern-regex: "(?i)ReflectivePEInjection"
+    message: "[PS] Critical: Memory injection technique detected (VirtualAlloc/WriteProcessMemory)."
+    languages: [regex]
+    severity: ERROR
+    metadata:
+      risk_score: 95
+      category: code_injection
+
+  # Regula 8: Detect Persistence via Registry (High) -> Mark 80 points
+  - id: ps-persistence-registry
+    patterns:
+      - pattern-regex: "(?i)Set-ItemProperty.*CurrentVersion\\\\Run"
+    message: "[PS] High: Persistence via Registry Run key detected."
+    languages: [regex]
+    severity: ERROR
+    metadata:
+      risk_score: 80
+      category: persistence
+
+  # Regula 9: Detect Backtick Obfuscation (Medium) -> Mark 60 points
+  - id: ps-obfuscation-backticks
+    patterns:
+      - pattern-regex: "`.*`.*`"
+    message: "[PS] Medium: Suspicious backtick obfuscation detected."
+    languages: [regex]
+    severity: WARNING
+    metadata:
+      risk_score: 60
+      category: obfuscation

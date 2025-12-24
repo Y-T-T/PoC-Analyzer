@@ -1,0 +1,158 @@
+# ==========================================
+# JavaScript / Node.js Threat Detection
+# ==========================================
+
+rules:
+  # Regula 1: Detect dangerous exec/spawn usage (Medium risk) -> Mark 40 points
+  - id: js-dangerous-exec
+    pattern-either:
+      - pattern: require('child_process').exec(...)
+      - pattern: require('child_process').spawn(...)
+      - pattern: require('child_process').execSync(...)
+      - pattern: require('child_process').execFileSync(...)
+      - patterns:
+          - pattern: $CP.exec(...)
+          - pattern-inside: |
+              $CP = require('child_process')
+              ...
+      - patterns:
+          - pattern: $CP.spawn(...)
+          - pattern-inside: |
+              $CP = require('child_process')
+              ...
+      - patterns:
+          - pattern: $CP.execSync(...)
+          - pattern-inside: |
+              $CP = require('child_process')
+              ...
+      # ES6/TypeScript import support
+      - patterns:
+          - pattern: $CP.exec(...)
+          - pattern-inside: |
+              import * as $CP from 'child_process'
+              ...
+      - patterns:
+          - pattern: $CP.spawn(...)
+          - pattern-inside: |
+              import * as $CP from 'child_process'
+              ...
+      - patterns:
+          - pattern: $FUNC(...)
+          - pattern-inside: |
+              import { $FUNC } from 'child_process'
+              ...
+          - metavariable-regex:
+              metavariable: $FUNC
+              regex: "(exec|spawn|execSync|execFile|execFileSync)"
+    message: "[JS] Critical: Script executes system commands."
+    languages: [javascript, typescript]
+    severity: ERROR
+    metadata:
+      risk_score: 40
+      category: rce
+
+  # Regula 2: Detect reverse shell patterns (High risk) -> Mark 100 points
+  - id: js-reverse-shell-net
+    pattern-either:
+      - pattern: |
+          $NET = require('net');
+          ...
+          $NET.connect(...).pipe(...)
+      - pattern: |
+          $SOCK.pipe($SH.stdin)
+      - pattern: |
+          $SH.stdout.pipe($CLIENT)
+      - pattern: |
+          $SH.stderr.pipe($CLIENT)
+      - patterns:
+          - pattern: |
+              $SH = $CP.spawn(...)
+              ...
+              $CLIENT.pipe($SH.stdin)
+          - pattern-inside: |
+              $CP = require('child_process')
+              ...
+    message: "[JS] Critical: Potential Reverse Shell (net.connect piped to shell)."
+    languages: [javascript, typescript]
+    severity: ERROR
+    metadata:
+      risk_score: 100
+      category: backdoor
+
+  # Regula 3: Detect obfuscated code execution (High risk) -> Mark 80 points
+  - id: js-obfuscated-code
+    pattern-either:
+      - pattern: eval(Buffer.from(..., 'base64').toString(...))
+      - pattern: eval(atob(...))
+      - pattern: new Function(..., 'return ...')(...)
+      - pattern: new Function(...)(...)
+      - pattern: eval(String.fromCharCode(...))
+      - pattern: Function(...)(...)
+    message: "[JS] High: Obfuscated code execution detected."
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      risk_score: 80
+      category: obfuscation
+
+  # Regula 4: Detect dangerous file operations (Medium risk) -> Mark 50 points
+  - id: js-dangerous-file-ops
+    pattern-either:
+      - pattern: $FS.unlinkSync(...)
+      - pattern: $FS.rmdirSync(..., {recursive:true, ...})
+      - pattern: $FS.rmSync(..., {recursive:true, ...})
+      - patterns:
+          - pattern-regex: "rm\\s+-rf\\s+"
+          - pattern-inside: |
+              $CP.exec("...", ...)
+    message: "[JS] Warning: Dangerous file deletion operation detected."
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      risk_score: 50
+      category: file_manipulation
+
+  # Regula 5: Detect network shell spawn (Critical) -> Mark 90 points
+  - id: js-spawn-shell-in-net
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              require('net')
+              ...
+          - pattern-inside: |
+              import * as $NET from 'net'
+              ...
+          - pattern-inside: |
+              import { ... } from 'net'
+              ...
+      - pattern-either:
+          - pattern: $CP.spawn('/bin/sh', ...)
+          - pattern: $CP.spawn('/bin/bash', ...)
+          - pattern: $CP.spawn('cmd.exe', ...)
+          - pattern: $CP.spawn('powershell', ...)
+    message: "[JS] Critical: Shell spawned in network context - likely reverse shell."
+    languages: [javascript, typescript]
+    severity: ERROR
+    metadata:
+      risk_score: 90
+      category: backdoor
+
+  # Regula 6: Detect hardcoded credentials (Medium risk) -> Mark 30 points
+  - id: js-hardcoded-credentials
+    pattern-either:
+      - pattern: |
+          $VAR = {password: "...", ...}
+      - pattern: |
+          $VAR = {apiKey: "...", ...}
+      - pattern: |
+          $VAR = {token: "...", ...}
+      - pattern: |
+          const $PASSWORD = "..."
+          ...
+          $AUTH(..., $PASSWORD, ...)
+    message: "[JS] Warning: Potential hardcoded credentials detected."
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      risk_score: 30
+      category: credential_leak

@@ -1,0 +1,234 @@
+# ==========================================
+# PHP Threat Detection
+# ==========================================
+
+rules:
+  # Regula 1: Detect OS command injection functions (High risk) -> Mark 60 points
+  - id: php-system-exec
+    pattern-either:
+      - pattern: system(...)
+      - pattern: exec(...)
+      - pattern: shell_exec(...)
+      - pattern: passthru(...)
+      - pattern: popen(...)
+      - pattern: proc_open(...)
+    message: "[PHP] Critical: OS Command Injection functions detected."
+    languages: [php]
+    severity: ERROR
+    metadata:
+      risk_score: 60
+      category: rce
+
+  # Regula 2: Detect dynamic code evaluation (Critical) -> Mark 90 points
+  - id: php-dangerous-eval
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: assert(...)
+      - pattern: create_function(...)
+      - patterns:
+          - pattern: eval($VAR)
+          - pattern-either:
+              - pattern-inside: |
+                  $VAR = $_GET[...];
+                  ...
+              - pattern-inside: |
+                  $VAR = $_POST[...];
+                  ...
+              - pattern-inside: |
+                  $VAR = $_REQUEST[...];
+                  ...
+    message: "[PHP] Critical: Dynamic code evaluation detected (often used in Webshells)."
+    languages: [php]
+    severity: ERROR
+    metadata:
+      risk_score: 90
+      category: backdoor
+
+  # Regula 3: Detect Webshell patterns (Critical) -> Mark 100 points
+  - id: php-webshell-pattern
+    patterns:
+      - pattern-either:
+          - pattern: |
+              eval($_POST[...])
+          - pattern: |
+              eval($_GET[...])
+          - pattern: |
+              eval($_REQUEST[...])
+          - pattern: |
+              assert($_POST[...])
+          - pattern: |
+              system($_POST[...])
+          - pattern: |
+              exec($_GET[...])
+          - patterns:
+              - pattern: eval(base64_decode(...))
+              - pattern-inside: |
+                  $... = $_...;
+                  ...
+    message: "[PHP] Critical: Webshell pattern detected - direct user input to dangerous function."
+    languages: [php]
+    severity: ERROR
+    metadata:
+      risk_score: 100
+      category: backdoor
+
+  # Regula 4: Detect dangerous file inclusion (High risk) -> Mark 70 points
+  - id: php-dangerous-include
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: include($VAR)
+              - pattern: require($VAR)
+              - pattern: include_once($VAR)
+              - pattern: require_once($VAR)
+          - pattern-either:
+              - pattern-inside: |
+                  $VAR = $_GET[...];
+                  ...
+              - pattern-inside: |
+                  $VAR = $_POST[...];
+                  ...
+              - pattern-inside: |
+                  $VAR = $_REQUEST[...];
+                  ...
+      - pattern: include("http://...")
+      - pattern: require("http://...")
+      - pattern: include("https://...")
+      - pattern: require("https://...")
+    message: "[PHP] High: File inclusion with user input or remote URL - potential RFI/LFI."
+    languages: [php]
+    severity: ERROR
+    metadata:
+      risk_score: 70
+      category: rce
+
+  # Regula 5: Detect unsafe deserialization (High risk) -> Mark 75 points
+  - id: php-unsafe-unserialize
+    patterns:
+      - pattern: unserialize($VAR)
+      - pattern-either:
+          - pattern-inside: |
+              $VAR = $_GET[...];
+              ...
+          - pattern-inside: |
+              $VAR = $_POST[...];
+              ...
+          - pattern-inside: |
+              $VAR = $_COOKIE[...];
+              ...
+          - pattern-inside: |
+              $VAR = $_REQUEST[...];
+              ...
+    message: "[PHP] High: Unsafe deserialization of user input - potential object injection."
+    languages: [php]
+    severity: ERROR
+    metadata:
+      risk_score: 75
+      category: deserialization
+
+  # Regula 6: Detect obfuscated code (High risk) -> Mark 80 points
+  - id: php-obfuscated-code
+    pattern-either:
+      - pattern: eval(base64_decode(...))
+      - pattern: eval(gzinflate(...))
+      - pattern: eval(gzuncompress(...))
+      - pattern: eval(str_rot13(...))
+      - pattern: assert(base64_decode(...))
+      - pattern: preg_replace("/.../e", ...)
+    message: "[PHP] High: Obfuscated code execution detected."
+    languages: [php]
+    severity: WARNING
+    metadata:
+      risk_score: 80
+      category: obfuscation
+
+  # Regula 7: Detect file writing (Medium risk) -> Mark 40 points
+  - id: php-file-write
+    pattern-either:
+      - pattern: file_put_contents(...)
+      - pattern: fwrite(...)
+      - pattern: fputs(...)
+      - patterns:
+          - pattern: file_put_contents($PATH, ...)
+          - metavariable-regex:
+              metavariable: $PATH
+              regex: ".*(\\.php|\\.phtml|\\.php5|\\.inc).*"
+    message: "[PHP] Warning: File writing detected - potential dropper or backdoor persistence."
+    languages: [php]
+    severity: WARNING
+    metadata:
+      risk_score: 40
+      category: file_manipulation
+
+  # Regula 8: Detect reverse shell patterns (Critical) -> Mark 95 points
+  - id: php-reverse-shell
+    pattern-either:
+      - patterns:
+          - pattern-inside: |
+              fsockopen(...)
+              ...
+          - pattern-either:
+              - pattern: proc_open(...)
+              - pattern: shell_exec(...)
+              - pattern: system(...)
+      - patterns:
+          - pattern: fsockopen($HOST, $PORT, ...)
+          - pattern-inside: |
+              $... = "/bin/sh";
+              ...
+    message: "[PHP] Critical: Reverse shell pattern detected."
+    languages: [php]
+    severity: ERROR
+    metadata:
+      risk_score: 95
+      category: backdoor
+
+  # Regula 9: Detect information disclosure (Low-Medium risk) -> Mark 25 points
+  - id: php-info-disclosure
+    pattern-either:
+      - pattern: phpinfo()
+      - pattern: var_dump($_SERVER)
+      - pattern: print_r($_SERVER)
+      - pattern: var_export($_ENV)
+    message: "[PHP] Warning: Information disclosure function detected."
+    languages: [php]
+    severity: WARNING
+    metadata:
+      risk_score: 25
+      category: info_leak
+
+  # Regula 10: Detect database credential patterns (Medium risk) -> Mark 30 points
+  - id: php-hardcoded-db-creds
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $... = mysqli_connect("...", "...", "...", ...)
+          - pattern: |
+              new PDO("...", "...", "...")
+      - metavariable-regex:
+          metavariable: $...
+          regex: ".*(root|admin|password|123456).*"
+    message: "[PHP] Warning: Hardcoded database credentials detected."
+    languages: [php]
+    severity: WARNING
+    metadata:
+      risk_score: 30
+      category: credential_leak
+
+  # Regula 11: Detect mail function abuse (Low-Medium risk) -> Mark 20 points
+  - id: php-mail-abuse
+    patterns:
+      - pattern: mail($TO, ...)
+      - pattern-either:
+          - pattern-inside: |
+              $TO = $_GET[...];
+              ...
+          - pattern-inside: |
+              $TO = $_POST[...];
+              ...
+    message: "[PHP] Warning: Mail function with user input - potential spam/phishing tool."
+    languages: [php]
+    severity: WARNING
+    metadata:
+      risk_score: 20
+      category: abuse

@@ -1,0 +1,155 @@
+# ==========================================
+# Common Threat Detection Rules
+# Multi-language generic patterns
+# ==========================================
+
+rules:
+  # Regula 1: Detect AWS Access Keys (High risk) -> Mark 60 points
+  - id: common-aws-access-key
+    pattern-regex: "(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}"
+    message: "[Common] Critical: AWS Access Key ID detected in code."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 60
+      category: credential_leak
+
+  # Regula 2: Detect AWS Secret Access Keys (High risk) -> Mark 70 points
+  - id: common-aws-secret-key
+    pattern-regex: "aws_secret_access_key\\s*[=:]\\s*['\"][A-Za-z0-9/+=]{40}['\"]"
+    message: "[Common] Critical: AWS Secret Access Key detected."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 70
+      category: credential_leak
+
+  # Regula 3: Detect Private Keys (Critical) -> Mark 80 points
+  - id: common-private-key
+    pattern-regex: "-----BEGIN (RSA|DSA|EC|OPENSSH|PGP|ENCRYPTED) PRIVATE KEY-----"
+    message: "[Common] Critical: Private Key (SSH/PGP/TLS) detected."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 80
+      category: credential_leak
+
+  # Regula 4: Detect GitHub Personal Access Tokens (High risk) -> Mark 65 points
+  - id: common-github-token
+    pattern-regex: "gh[pousr]_[A-Za-z0-9_]{36,255}"
+    message: "[Common] Critical: GitHub Personal Access Token detected."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 65
+      category: credential_leak
+
+  # Regula 5: Detect Slack Tokens (High risk) -> Mark 65 points
+  - id: common-slack-token
+    pattern-regex: "xox[baprs]-[0-9]{10,13}-[0-9]{10,13}-[A-Za-z0-9]{24,32}"
+    message: "[Common] Critical: Slack API Token detected."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 65
+      category: credential_leak
+
+  # Regula 6: Detect Generic API Keys (Medium risk) -> Mark 40 points
+  - id: common-generic-api-key
+    pattern-regex: "(api[_-]?key|apikey|access[_-]?token|secret[_-]?key)\\s*[=:]\\s*['\"][A-Za-z0-9_/+=\\-]{20,}['\"]"
+    message: "[Common] Warning: Potential API Key or Token found."
+    languages: [generic]
+    severity: WARNING
+    metadata:
+      risk_score: 40
+      category: credential_leak
+
+  # Regula 7: Detect JWT Tokens (Medium risk) -> Mark 35 points
+  - id: common-jwt-token
+    pattern-regex: "eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}"
+    message: "[Common] Warning: JWT Token detected in code."
+    languages: [generic]
+    severity: WARNING
+    metadata:
+      risk_score: 35
+      category: credential_leak
+
+  # Regula 8: Detect database connection strings (High risk) -> Mark 55 points
+  - id: common-db-connection-string
+    pattern-regex: "(mysql|postgresql|mongodb)://[^\\s:]+:[^\\s@]+@[^\\s/]+"
+    message: "[Common] High: Database connection string with credentials detected."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 55
+      category: credential_leak
+
+  # Regula 9: Detect password in variable names (Medium risk) -> Mark 45 points
+  - id: common-hardcoded-password
+    pattern-regex: "(password|passwd|pwd)\\s*[=:]\\s*['\"][^'\"]{8,}['\"]"
+    message: "[Common] Warning: Hardcoded password detected."
+    languages: [generic]
+    severity: WARNING
+    metadata:
+      risk_score: 45
+      category: credential_leak
+
+  # Regula 10: Detect suspicious pastebin/file sharing URLs (High risk) -> Mark 75 points
+  - id: common-suspicious-file-sharing
+    pattern-regex: "(pastebin\\.com|ghostbin\\.com|hastebin\\.com|transfer\\.sh|file\\.io|anonfiles\\.com|gofile\\.io)/[A-Za-z0-9]+"
+    message: "[Common] High: Suspicious file sharing URL - common malware dropper."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 75
+      category: network
+
+  # Regula 11: Detect Discord CDN URLs (Medium risk) -> Mark 50 points
+  - id: common-discord-cdn
+    pattern-regex: "cdn\\.discordapp\\.com/attachments/[0-9]+/[0-9]+/"
+    message: "[Common] Warning: Discord CDN URL - sometimes used for malware hosting."
+    languages: [generic]
+    severity: WARNING
+    metadata:
+      risk_score: 50
+      category: network
+
+  # Regula 12: Detect raw GitHub URLs (Medium risk) -> Mark 45 points
+  - id: common-raw-github
+    pattern-regex: "raw\\.githubusercontent\\.com/[^\\s/]+/[^\\s/]+/(main|master|[^\\s]+)/"
+    message: "[Common] Warning: Raw GitHub URL - verify content source."
+    languages: [generic]
+    severity: WARNING
+    metadata:
+      risk_score: 45
+      category: network
+
+  # Regula 13: Detect suspicious TLDs (Medium risk) -> Mark 40 points
+  - id: common-suspicious-tld
+    pattern-regex: "https?://[^\\s/]+\\.(tk|ml|ga|cf|gq|top|xyz|work|click)/"
+    message: "[Common] Warning: Suspicious TLD - commonly used for phishing/malware."
+    languages: [generic]
+    severity: WARNING
+    metadata:
+      risk_score: 40
+      category: network
+
+  # Regula 14: Detect base64 encoded strings (Low risk) -> Mark 25 points
+  - id: common-base64-long-string
+    pattern-regex: "[A-Za-z0-9+/]{100,}={0,2}"
+    message: "[Common] Info: Long base64-like string detected - may contain encoded payload."
+    languages: [generic]
+    severity: INFO
+    metadata:
+      risk_score: 25
+      category: obfuscation
+
+  # Regula 15: Detect hex encoded strings (Low risk) -> Mark 20 points
+  - id: common-hex-long-string
+    pattern-regex: "(0x[0-9a-fA-F]{2}[,\\s]*){20,}"
+    message: "[Common] Info: Long hex string detected - may be shellcode."
+    languages: [generic]
+    severity: INFO
+    metadata:
+      risk_score: 20
+      category: obfuscation

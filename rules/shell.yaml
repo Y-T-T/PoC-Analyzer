@@ -1,0 +1,216 @@
+# ==========================================
+# Shell Threat Detection Rules
+# ==========================================
+
+rules:
+  # Regula 1: Detect Bash /dev/tcp reverse shell (Critical) -> Mark 100 points
+  - id: bash-reverse-shell-dev-tcp
+    pattern-regex: "/dev/tcp/[0-9a-z.-]+/[0-9]+"
+    message: "[Shell] Critical: Bash reverse shell via /dev/tcp detected."
+    languages: [bash, sh]
+    severity: ERROR
+    metadata:
+      risk_score: 100
+      category: backdoor
+
+  # Regula 2: Detect Netcat reverse shell patterns (Critical) -> Mark 100 points
+  - id: bash-reverse-shell-nc
+    pattern-either:
+      - pattern: nc -e /bin/sh ...
+      - pattern: nc -e /bin/bash ...
+      - pattern: netcat -e ...
+    message: "[Shell] Critical: Netcat reverse shell detected."
+    languages: [bash, sh]
+    severity: ERROR
+    metadata:
+      risk_score: 100
+      category: backdoor
+
+  # Regula 3: Detect Python/Perl/Ruby reverse shells (Critical) -> Mark 95 points
+  - id: bash-scripting-reverse-shell
+    pattern-either:
+      - pattern: python -c ...
+      - pattern: python3 -c ...
+      - pattern: perl -e ...
+      - pattern: ruby -rsocket -e ...
+      - pattern: php -r ...
+    message: "[Shell] High: Scripting language one-liner detected."
+    languages: [bash, sh]
+    severity: ERROR
+    metadata:
+      risk_score: 50
+      category: code_injection
+
+  # Regula 4: Detect curl | bash download and execute (High risk) -> Mark 80 points
+  - id: bash-curl-pipe-bash
+    pattern-either:
+      - pattern: curl ... | bash
+      - pattern: curl ... | sh
+      - pattern: wget -O - ... | bash
+      - pattern: wget -O - ... | sh
+      - pattern: wget -qO- ... | bash
+    message: "[Shell] High: Download & Execute pattern detected."
+    languages: [bash, sh]
+    severity: ERROR
+    metadata:
+      risk_score: 80
+      category: rce
+
+  # Regula 5: Detect base64 decoded execution (Obfuscation) -> Mark 90 points
+  - id: bash-base64-decode-exec
+    pattern-either:
+      - pattern: echo ... | base64 -d | bash
+      - pattern: echo ... | base64 -d | sh
+      - pattern: base64 -d ... | bash
+    message: "[Shell] Critical: Base64 decoded execution."
+    languages: [bash, sh]
+    severity: ERROR
+    metadata:
+      risk_score: 90
+      category: obfuscation
+
+  # Regula 6: Detect SUID privilege escalation (Critical) -> Mark 85 points
+  - id: bash-suid-privilege-escalation
+    pattern-either:
+      - pattern: chmod +s ...
+      - pattern: chmod u+s ...
+      - pattern: chmod 4755 ...
+      - pattern: chmod 6755 ...
+    message: "[Shell] Critical: SUID/SGID privilege escalation."
+    languages: [bash, sh]
+    severity: ERROR
+    metadata:
+      risk_score: 85
+      category: privilege_escalation
+
+  # Regula 7: Detect cron job persistence (High risk) -> Mark 75 points
+  - id: bash-cron-persistence
+    pattern-either:
+      - pattern: echo ... | crontab ...
+      - pattern: "... >> /etc/crontab"
+      - pattern: "... >> /etc/cron.d/..."
+    message: "[Shell] High: Cron job persistence detected."
+    languages: [bash, sh]
+    severity: ERROR
+    metadata:
+      risk_score: 75
+      category: persistence
+
+  # Regula 8: Detect SSH key manipulation (High risk) -> Mark 80 points
+  - id: bash-ssh-key-manipulation
+    pattern-either:
+      - pattern: "... >> ~/.ssh/authorized_keys"
+      - pattern: "... >> /root/.ssh/authorized_keys"
+      - pattern: "... >> /home/.../.ssh/authorized_keys"
+    message: "[Shell] High: SSH key manipulation."
+    languages: [bash, sh]
+    severity: ERROR
+    metadata:
+      risk_score: 80
+      category: backdoor
+
+  # Regula 9: Detect sensitive file writes (Persistence) -> Mark 70 points
+  - id: bash-suspicious-file-write
+    pattern-either:
+      - pattern: "... >> /etc/passwd"
+      - pattern: "... >> /etc/shadow"
+      - pattern: "... >> /etc/sudoers"
+      - pattern: "... >> ~/.bashrc"
+      - pattern: "... >> /etc/rc.local"
+    message: "[Shell] High: Writing to sensitive system files."
+    languages: [bash, sh]
+    severity: WARNING
+    metadata:
+      risk_score: 70
+      category: persistence
+
+  # Regula 10: Detect destructive commands (Critical) -> Mark 100 points
+  - id: bash-destructive-command
+    pattern-either:
+      - pattern: rm -rf /
+      - pattern: rm -rf /*
+      - pattern: ":(){ :|:& };:"
+    message: "[Shell] Critical: Destructive command or fork bomb."
+    languages: [bash, sh]
+    severity: ERROR
+    metadata:
+      risk_score: 100
+      category: destruction
+
+  # Regula 11: Detect history clearing (Anti-forensics) -> Mark 60 points
+  - id: bash-anti-forensics
+    pattern-either:
+      - pattern: history -c
+      - pattern: export HISTFILE=/dev/null
+      - pattern: export HISTSIZE=0
+      - pattern: rm ... ~/.bash_history
+    message: "[Shell] High: History clearing - anti-forensics."
+    languages: [bash, sh]
+    severity: WARNING
+    metadata:
+      risk_score: 60
+      category: evasion
+
+  # Regula 12: Detect data exfiltration (High risk) -> Mark 70 points
+  - id: bash-data-exfiltration
+    pattern-either:
+      - pattern: curl ... --data ...
+      - pattern: curl -X POST ...
+      - pattern: wget --post-data ...
+      - pattern: wget --post-file ...
+    message: "[Shell] High: Potential data exfiltration via HTTP POST."
+    languages: [bash, sh]
+    severity: ERROR
+    metadata:
+      risk_score: 70
+      category: info_leak
+
+  # Regula 13: Detect eval obfuscation (Medium-High risk) -> Mark 65 points
+  - id: bash-eval-obfuscation
+    pattern-either:
+      - pattern: eval $(echo ...)
+      - pattern: eval $(base64 ...)
+    message: "[Shell] High: Eval with command substitution."
+    languages: [bash, sh]
+    severity: WARNING
+    metadata:
+      risk_score: 65
+      category: obfuscation
+
+  # Regula 14: Detect background execution (Medium risk) -> Mark 50 points
+  - id: bash-background-execution
+    pattern-either:
+      - pattern: nohup ... &
+      - pattern: screen -dmS ...
+      - pattern: tmux new-session -d ...
+    message: "[Shell] Warning: Background/detached process execution."
+    languages: [bash, sh]
+    severity: WARNING
+    metadata:
+      risk_score: 50
+      category: persistence
+
+  # Regula 15: Detect LD_PRELOAD hijacking (Medium risk) -> Mark 55 points
+  - id: bash-env-hijacking
+    pattern-either:
+      - pattern: export LD_PRELOAD=...
+      - pattern: export LD_LIBRARY_PATH=...
+      - pattern: LD_PRELOAD=... ...
+    message: "[Shell] Warning: Environment variable hijacking."
+    languages: [bash, sh]
+    severity: WARNING
+    metadata:
+      risk_score: 55
+      category: privilege_escalation
+
+  # Regula 16: Detect port scanning (Low-Medium risk) -> Mark 40 points
+  - id: bash-port-scanning
+    pattern-either:
+      - pattern: nmap ...
+      - pattern: nc -zv ...
+    message: "[Shell] Warning: Port scanning activity."
+    languages: [bash, sh]
+    severity: WARNING
+    metadata:
+      risk_score: 40
+      category: network

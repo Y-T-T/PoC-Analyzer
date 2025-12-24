@@ -1,0 +1,345 @@
+# ==========================================
+# Windows Batch/CMD Threat Detection Rules
+# Note: Uses generic mode for text-based pattern matching
+# ==========================================
+
+rules:
+  # Regula 1: Detect certutil file download (Critical) -> Mark 90 points
+  - id: batch-certutil-download
+    pattern-regex: "certutil.*-(urlcache|verifyctl|decode)"
+    message: "[Batch] Critical: Certutil file download/decode technique detected."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 90
+      category: rce
+
+  # Regula 2: Detect bitsadmin file download (Critical) -> Mark 85 points
+  - id: batch-bitsadmin-download
+    pattern-regex: "bitsadmin.*/transfer"
+    message: "[Batch] Critical: Bitsadmin file download detected."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 85
+      category: rce
+
+  # Regula 3: Detect PowerShell download techniques (High risk) -> Mark 80 points
+  - id: batch-powershell-download
+    pattern-regex: "powershell.*(DownloadFile|DownloadString|Invoke-WebRequest)"
+    message: "[Batch] High: PowerShell download command detected."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 80
+      category: rce
+
+  # Regula 4: Detect mshta execution (High risk) -> Mark 85 points
+  - id: batch-mshta-execution
+    pattern-regex: "mshta.*(vbscript|javascript|http)"
+    message: "[Batch] Critical: MSHTA script execution."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 85
+      category: code_injection
+
+  # Regula 5: Detect regsvr32 abuse (High risk) -> Mark 75 points
+  - id: batch-regsvr32-abuse
+    pattern-regex: "regsvr32.*(\\.sct|http)"
+    message: "[Batch] High: Regsvr32 scriptlet execution."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 75
+      category: code_injection
+
+  # Regula 6: Detect registry persistence (Critical) -> Mark 80 points
+  - id: batch-registry-persistence
+    pattern-regex: "reg\\s+add.*(\\\\Run|\\\\RunOnce)"
+    message: "[Batch] Critical: Registry persistence mechanism."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 80
+      category: persistence
+
+  # Regula 7: Detect scheduled task creation (High risk) -> Mark 70 points
+  - id: batch-schtasks-create
+    pattern-regex: "schtasks.*/create"
+    message: "[Batch] High: Scheduled task creation."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 70
+      category: persistence
+
+  # Regula 8: Detect service creation (High risk) -> Mark 65 points
+  - id: batch-service-create
+    pattern-regex: "sc\\s+create"
+    message: "[Batch] High: Windows service creation."
+    languages: [generic]
+    severity: WARNING
+    metadata:
+      risk_score: 65
+      category: persistence
+
+  # Regula 9: Detect shadow copy deletion (Critical) -> Mark 100 points
+  - id: batch-delete-shadow-copies
+    pattern-regex: "vssadmin.*delete.*shadows"
+    message: "[Batch] Critical: Volume Shadow Copy deletion (ransomware)."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 100
+      category: destruction
+
+  # Regula 10: Detect Windows Defender disable (Critical) -> Mark 90 points
+  - id: batch-disable-defender
+    pattern-regex: "(DisableRealtimeMonitoring|sc.*WinDefend)"
+    message: "[Batch] Critical: Attempt to disable Windows Defender."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 90
+      category: evasion
+
+  # Regula 11: Detect firewall disable (High risk) -> Mark 80 points
+  - id: batch-disable-firewall
+    pattern-regex: "netsh.*(advfirewall|firewall).*off"
+    message: "[Batch] High: Attempt to disable Windows Firewall."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 80
+      category: evasion
+
+  # Regula 12: Detect WMI execution (Medium-High risk) -> Mark 60 points
+  - id: batch-wmi-execution
+    pattern-regex: "wmic\\s+process\\s+call\\s+create"
+    message: "[Batch] High: WMI command execution."
+    languages: [generic]
+    severity: WARNING
+    metadata:
+      risk_score: 60
+      category: rce
+
+  # Regula 13: Detect event log clearing (High risk) -> Mark 75 points
+  - id: batch-clear-event-logs
+    pattern-regex: "wevtutil.*(cl|clear)"
+    message: "[Batch] High: Event log clearing (anti-forensics)."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 75
+      category: evasion
+
+  # Regula 14: Detect PowerShell execution bypass (High risk) -> Mark 70 points
+  - id: batch-powershell-bypass
+    pattern-regex: "powershell.*-(bypass|nop|hidden|enc)"
+    message: "[Batch] High: PowerShell execution policy bypass."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 70
+      category: evasion
+
+  # Regula 15: Detect credential dumping (Critical) -> Mark 95 points
+  - id: batch-credential-dumping
+    pattern-regex: "(mimikatz|procdump.*lsass|reg.*save.*sam)"
+    message: "[Batch] Critical: Credential dumping technique."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 95
+      category: credential_leak
+
+  # Regula 2: Detect bitsadmin file download (Critical) -> Mark 85 points
+  - id: batch-bitsadmin-download
+    pattern-regex: "(?i)bitsadmin(\\.exe)?\\s+(/transfer|/create|/addfile)"
+    message: "[Batch] Critical: Bitsadmin file download detected."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 85
+      category: rce
+
+  # Regula 3: Detect PowerShell download techniques (High risk) -> Mark 80 points
+  - id: batch-powershell-download
+    pattern-regex: "(?i)powershell(\\.exe)?.*(DownloadFile|DownloadString|Invoke-WebRequest|iwr|wget|curl)"
+    message: "[Batch] High: PowerShell download command detected."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 80
+      category: rce
+
+  # Regula 4: Detect mshta execution (High risk) -> Mark 85 points
+  - id: batch-mshta-execution
+    pattern-regex: "(?i)mshta(\\.exe)?\\s+(vbscript|javascript|http|https)"
+    message: "[Batch] Critical: MSHTA script execution (fileless attack vector)."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 85
+      category: code_injection
+
+  # Regula 5: Detect rundll32 abuse (High risk) -> Mark 75 points
+  - id: batch-rundll32-abuse
+    pattern-regex: "(?i)rundll32(\\.exe)?\\s+(javascript:|vbscript:|http|advpack\\.dll|pcwutl\\.dll)"
+    message: "[Batch] High: Rundll32 abuse for code execution."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 75
+      category: code_injection
+
+  # Regula 6: Detect regsvr32 abuse (High risk) -> Mark 75 points
+  - id: batch-regsvr32-abuse
+    pattern-regex: "(?i)regsvr32(\\.exe)?\\s+(/s|/u)?.*(\\.sct|http)"
+    message: "[Batch] High: Regsvr32 scriptlet execution (fileless attack)."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 75
+      category: code_injection
+
+  # Regula 7: Detect registry persistence (Critical) -> Mark 80 points
+  - id: batch-registry-persistence
+    pattern-regex: "(?i)reg\\s+(add|import).*(\\\\Run|\\\\RunOnce|\\\\UserInitMprLogonScript|\\\\Services)"
+    message: "[Batch] Critical: Registry persistence mechanism."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 80
+      category: persistence
+
+  # Regula 8: Detect scheduled task creation (High risk) -> Mark 70 points
+  - id: batch-schtasks-create
+    pattern-regex: "(?i)schtasks(\\.exe)?\\s+/create"
+    message: "[Batch] High: Scheduled task creation for persistence."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 70
+      category: persistence
+
+  # Regula 9: Detect service manipulation (High risk) -> Mark 65 points
+  - id: batch-service-manipulation
+    pattern-regex: "(?i)sc(\\.exe)?\\s+(create|config|start)"
+    message: "[Batch] High: Windows service manipulation."
+    languages: [generic]
+    severity: WARNING
+    metadata:
+      risk_score: 65
+      category: persistence
+
+  # Regula 10: Detect shadow copy deletion (Critical) -> Mark 100 points
+  - id: batch-delete-shadow-copies
+    pattern-regex: "(?i)(vssadmin(\\.exe)?\\s+delete\\s+shadows|wmic\\s+shadowcopy\\s+delete)"
+    message: "[Batch] Critical: Volume Shadow Copy deletion (ransomware behavior)."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 100
+      category: destruction
+
+  # Regula 11: Detect Windows Defender disable (Critical) -> Mark 90 points
+  - id: batch-disable-defender
+    pattern-regex: "(?i)(Set-MpPreference.*-DisableRealtimeMonitoring|sc\\s+(stop|config)\\s+WinDefend)"
+    message: "[Batch] Critical: Attempt to disable Windows Defender."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 90
+      category: evasion
+
+  # Regula 12: Detect firewall disable (High risk) -> Mark 80 points
+  - id: batch-disable-firewall
+    pattern-regex: "(?i)netsh\\s+(advfirewall|firewall)\\s+(set|add).*(off|disable)"
+    message: "[Batch] High: Attempt to disable Windows Firewall."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 80
+      category: evasion
+
+  # Regula 13: Detect WMI execution (Medium-High risk) -> Mark 60 points
+  - id: batch-wmi-execution
+    pattern-regex: "(?i)wmic\\s+(process\\s+call\\s+create|/node:)"
+    message: "[Batch] High: WMI command execution."
+    languages: [generic]
+    severity: WARNING
+    metadata:
+      risk_score: 60
+      category: rce
+
+  # Regula 14: Detect UAC bypass attempts (High risk) -> Mark 85 points
+  - id: batch-uac-bypass
+    pattern-regex: "(?i)(eventvwr\\.exe|fodhelper\\.exe|ComputerDefaults\\.exe|sdclt\\.exe).*shell\\\\open\\\\command"
+    message: "[Batch] Critical: UAC bypass attempt detected."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 85
+      category: privilege_escalation
+
+  # Regula 15: Detect event log clearing (High risk) -> Mark 75 points
+  - id: batch-clear-event-logs
+    pattern-regex: "(?i)(wevtutil(\\.exe)?\\s+(cl|clear-log)|for\\s+/f.*wevtutil\\s+cl)"
+    message: "[Batch] High: Event log clearing (anti-forensics)."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 75
+      category: evasion
+
+  # Regula 16: Detect PowerShell execution bypass (High risk) -> Mark 70 points
+  - id: batch-powershell-bypass
+    pattern-regex: "(?i)powershell(\\.exe)?\\s+(-|/).*(bypass|noprofile|nop|hidden|windowstyle\\s+hidden|encodedcommand|enc)"
+    message: "[Batch] High: PowerShell execution policy bypass."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 70
+      category: evasion
+
+  # Regula 17: Detect encoded PowerShell commands (High risk) -> Mark 80 points
+  - id: batch-powershell-encoded
+    pattern-regex: "(?i)powershell(\\.exe)?\\s+.*-enc(odedcommand)?\\s+[A-Za-z0-9+/=]{20,}"
+    message: "[Batch] High: Base64 encoded PowerShell command."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 80
+      category: obfuscation
+
+  # Regula 18: Detect batch obfuscation (Medium risk) -> Mark 55 points
+  - id: batch-caret-obfuscation
+    pattern-regex: "([a-zA-Z]\\^){3,}"
+    message: "[Batch] Warning: Caret obfuscation detected (e.g., p^o^w^e^r^s^h^e^l^l)."
+    languages: [generic]
+    severity: WARNING
+    metadata:
+      risk_score: 55
+      category: obfuscation
+
+  # Regula 19: Detect admin share access (Medium risk) -> Mark 50 points
+  - id: batch-admin-share-access
+    pattern-regex: "(?i)(net\\s+use|copy|xcopy|move).*\\$\\\\(c|admin|ipc)\\$"
+    message: "[Batch] Warning: Admin share access (lateral movement)."
+    languages: [generic]
+    severity: WARNING
+    metadata:
+      risk_score: 50
+      category: network
+
+  # Regula 20: Detect credential dumping tools (Critical) -> Mark 95 points
+  - id: batch-credential-dumping
+    pattern-regex: "(?i)(mimikatz|procdump|comsvcs\\.dll.*lsass|reg\\s+save.*sam)"
+    message: "[Batch] Critical: Credential dumping tool or technique detected."
+    languages: [generic]
+    severity: ERROR
+    metadata:
+      risk_score: 95
+      category: credential_leak

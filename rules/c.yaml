@@ -1,0 +1,219 @@
+# ==========================================
+# C / C++ Threat Detection Rules
+# ==========================================
+
+rules:
+  # Regula 1: Detect direct system command execution (High risk) -> Mark 60 points
+  - id: c-system-command
+    pattern-either:
+      - pattern: system(...)
+      - pattern: popen(...)
+      - pattern: execl(...)
+      - pattern: execlp(...)
+      - pattern: execle(...)
+      - pattern: execv(...)
+      - pattern: execvp(...)
+      - pattern: execve(...)
+    message: "[C/C++] Critical: Direct system command execution."
+    languages: [c, cpp]
+    severity: ERROR
+    metadata:
+      risk_score: 60
+      category: rce
+
+  # Regula 2: Detect Windows process creation (High risk) -> Mark 70 points
+  - id: c-windows-shell-execution
+    pattern-either:
+      - pattern: ShellExecute(...)
+      - pattern: ShellExecuteA(...)
+      - pattern: ShellExecuteW(...)
+      - pattern: CreateProcess(...)
+      - pattern: CreateProcessA(...)
+      - pattern: CreateProcessW(...)
+      - pattern: WinExec(...)
+    message: "[C/C++] Critical: Windows process creation detected."
+    languages: [c, cpp]
+    severity: ERROR
+    metadata:
+      risk_score: 70
+      category: rce
+
+  # Regula 3: Detect unsafe string functions (High risk) -> Mark 65 points
+  - id: c-unsafe-string-functions
+    pattern-either:
+      - pattern: strcpy($DST, ...)
+      - pattern: strcat($DST, ...)
+      - pattern: gets(...)
+      - pattern: sprintf($BUF, ...)
+      - pattern: vsprintf($BUF, ...)
+      - pattern: scanf("%s", ...)
+      - pattern: fscanf($FILE, "%s", ...)
+    message: "[C/C++] High: Unsafe string function - potential buffer overflow."
+    languages: [c, cpp]
+    severity: ERROR
+    metadata:
+      risk_score: 65
+      category: memory_corruption
+
+  # Regula 4: Detect dangerous memory operations (Medium risk) -> Mark 45 points
+  - id: c-dangerous-memory-ops
+    pattern-either:
+      - pattern: memcpy($DST, $SRC, $SIZE)
+      - pattern: memmove($DST, $SRC, $SIZE)
+      - pattern: strncpy($DST, $SRC, $SIZE)
+    message: "[C/C++] Warning: Potentially unsafe memory operation."
+    languages: [c, cpp]
+    severity: WARNING
+    metadata:
+      risk_score: 45
+      category: memory_corruption
+
+  # Regula 5: Detect reverse shell pattern (Critical) -> Mark 100 points
+  - id: c-reverse-shell-pattern
+    patterns:
+      - pattern-inside: |
+          socket(...)
+          ...
+      - pattern-either:
+          - pattern: |
+              dup2($SOCK, 0);
+              ...
+              execve(...)
+          - pattern: |
+              dup2($SOCK, ...)
+              ...
+              system(...)
+          - patterns:
+              - pattern: dup2($FD, 0)
+              - pattern: dup2($FD, 1)
+              - pattern: dup2($FD, 2)
+    message: "[C/C++] Critical: Reverse shell pattern - socket duplicated to stdin/stdout/stderr."
+    languages: [c, cpp]
+    severity: ERROR
+    metadata:
+      risk_score: 100
+      category: backdoor
+
+  # Regula 6: Detect privilege escalation attempts (High risk) -> Mark 75 points
+  - id: c-privilege-escalation
+    pattern-either:
+      - pattern: setuid(0)
+      - pattern: seteuid(0)
+      - pattern: setreuid(0, 0)
+      - pattern: setgid(0)
+      - pattern: setegid(0)
+      - pattern: setregid(0, 0)
+      - pattern: chmod($PATH, 04755)
+      - pattern: chown($PATH, 0, ...)
+    message: "[C/C++] Critical: Privilege escalation attempt detected."
+    languages: [c, cpp]
+    severity: ERROR
+    metadata:
+      risk_score: 75
+      category: privilege_escalation
+
+  # Regula 7: Detect shellcode execution patterns (Critical) -> Mark 90 points
+  - id: c-shellcode-execution
+    pattern-either:
+      - patterns:
+          - pattern: |
+              $PTR = mmap(...)
+              ...
+              memcpy($PTR, ...)
+              ...
+              (($FUNC_TYPE)$PTR)(...)
+      - patterns:
+          - pattern: |
+              $PTR = VirtualAlloc(...)
+              ...
+              memcpy($PTR, ...)
+              ...
+              (($FUNC_TYPE)$PTR)(...)
+      - pattern: |
+          char $SHELLCODE[] = {...};
+          ...
+          ((void(*)())$SHELLCODE)()
+    message: "[C/C++] Critical: Shellcode execution pattern detected."
+    languages: [c, cpp]
+    severity: ERROR
+    metadata:
+      risk_score: 90
+      category: code_injection
+
+  # Regula 8: Detect file operations in sensitive paths (Medium risk) -> Mark 50 points
+  - id: c-sensitive-file-ops
+    patterns:
+      - pattern-either:
+          - pattern: fopen($PATH, "w")
+          - pattern: fopen($PATH, "wb")
+          - pattern: fopen($PATH, "a")
+          - pattern: open($PATH, O_WRONLY, ...)
+          - pattern: open($PATH, O_RDWR, ...)
+          - pattern: creat($PATH, ...)
+      - metavariable-regex:
+          metavariable: $PATH
+          regex: ".*((/etc/|/bin/|/sbin/|/usr/bin/|/boot/|\\.ssh/|/root/|cron|passwd|shadow|sudoers).*)"
+    message: "[C/C++] Warning: File operation in sensitive system location."
+    languages: [c, cpp]
+    severity: WARNING
+    metadata:
+      risk_score: 50
+      category: file_manipulation
+
+  # Regula 9: Detect network socket operations (Low-Medium risk) -> Mark 30 points
+  - id: c-socket-connection
+    pattern-either:
+      - pattern: socket(AF_INET, SOCK_STREAM, ...)
+      - pattern: socket(AF_INET6, SOCK_STREAM, ...)
+      - pattern: connect($SOCK, ...)
+      - pattern: bind($SOCK, ...)
+    message: "[C/C++] Info: Network socket operation detected."
+    languages: [c, cpp]
+    severity: INFO
+    metadata:
+      risk_score: 30
+      category: network
+
+  # Regula 10: Detect dynamic library loading (Medium risk) -> Mark 40 points
+  - id: c-dynamic-loading
+    pattern-either:
+      - pattern: dlopen(...)
+      - pattern: LoadLibrary(...)
+      - pattern: LoadLibraryA(...)
+      - pattern: LoadLibraryW(...)
+      - pattern: LoadLibraryEx(...)
+    message: "[C/C++] Warning: Dynamic library loading detected."
+    languages: [c, cpp]
+    severity: WARNING
+    metadata:
+      risk_score: 40
+      category: code_injection
+
+  # Regula 11: Detect format string vulnerabilities (High risk) -> Mark 70 points
+  - id: c-format-string-vuln
+    patterns:
+      - pattern-either:
+          - pattern: printf($VAR)
+          - pattern: fprintf($FILE, $VAR)
+          - pattern: syslog($PRIO, $VAR)
+      - pattern-not: printf("...")
+      - pattern-not: fprintf($FILE, "...")
+    message: "[C/C++] High: Potential format string vulnerability."
+    languages: [c, cpp]
+    severity: ERROR
+    metadata:
+      risk_score: 70
+      category: memory_corruption
+
+  # Regula 12: Detect anti-debugging techniques (Medium risk) -> Mark 35 points
+  - id: c-anti-debugging
+    pattern-either:
+      - pattern: ptrace(PTRACE_TRACEME, ...)
+      - pattern: IsDebuggerPresent()
+      - pattern: CheckRemoteDebuggerPresent(...)
+    message: "[C/C++] Warning: Anti-debugging technique detected."
+    languages: [c, cpp]
+    severity: WARNING
+    metadata:
+      risk_score: 35
+      category: evasion
