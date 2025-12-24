@@ -52,7 +52,7 @@ PoC-Analyzer/
 ---
 
 ## ⚠️ Test Samples
-The test cases are encrypted to prevent antivirus false positives. Unzip test_samples.zip with password: `infected` to run the tests.
+The test cases are encrypted to prevent antivirus false positives. Unzip test_samples.zip in Sandbox environment with password: `infected` to run the tests.
 
 ---
 
