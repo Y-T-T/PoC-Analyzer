@@ -34,7 +34,7 @@ PoC-Analyzer/
 ├── PoC_Analyzer.py            # Main Analysis Engine
 ├── README.md                  # Documentation
 ├── requirements.txt           # Python dependencies
-├── test_samples.zip          # Encrypted test samples (password: infected)
+├── test_samples.zip           # Encrypted test samples (password: infected)
 └── rules/                     # Semgrep Rule Definitions
     ├── common.yaml        # Cross-language secrets IoCs
     ├── c.yaml             # C/C++ rules
