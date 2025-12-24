@@ -71,7 +71,7 @@ cd PoC-Analyzer
 pip install -r requirements.txt
 ```
 
-## 🛠️ Usage
+## Usage
 
 ### 1. Basic Scan (Recommended)
 
