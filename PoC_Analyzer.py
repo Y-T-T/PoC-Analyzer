@@ -298,8 +298,8 @@ def parse_arguments():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python3 PoC_Analyzer.py test_PoC/malicious_test.js
-  python3 PoC_Analyzer.py -c python.yaml -t 120 suspicious_script.py
+  python PoC_Analyzer.py test_PoC/malicious_test.js
+  python PoC_Analyzer.py -c python.yaml -t 120 test_PoC/malicious_test.py
         """
     )
     
