@@ -2,8 +2,6 @@
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python) ![Semgrep](https://img.shields.io/badge/Engine-Semgrep-green) ![License](https://img.shields.io/badge/License-MIT-purple) ![Status](https://img.shields.io/badge/Status-Beta-orange)
 
-**PoC Analyzer** is a specialized static analysis tool designed for Cybersecurity Researchers, Red Teamers, and Protocol Engineers. 
-
 Unlike traditional SAST tools that search for *vulnerabilities* in code, PoC Analyzer scans for **Malicious Intent**. It is built to validate third-party Proof-of-Concept (PoC) scripts downloaded from GitHub, Exploit-DB, or other public sources, ensuring they do not contain hidden backdoors, reverse shells, or malware droppers before you execute them.
 
 ---
