@@ -50,7 +50,7 @@ rules:
     languages: [regex]
     severity: WARNING
     metadata:
-      risk_score: 50
+      risk_score: 30
       category: defense-evasion
 
   # Regula 5: Detect Base64 encoded commands (High risk) -> Mark 80 points

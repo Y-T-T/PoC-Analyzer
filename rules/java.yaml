@@ -13,7 +13,7 @@ rules:
     languages: [java]
     severity: ERROR
     metadata:
-      risk_score: 60
+      risk_score: 30
       category: rce
 
   # Regula 2: Detect command injection via concatenation (High risk) -> Mark 75 points
@@ -86,7 +86,7 @@ rules:
     languages: [java]
     severity: WARNING
     metadata:
-      risk_score: 70
+      risk_score: 40
       category: code_injection
 
   # Regula 7: Detect JNI library loading (High risk) -> Mark 65 points
@@ -99,7 +99,7 @@ rules:
     languages: [java]
     severity: WARNING
     metadata:
-      risk_score: 65
+      risk_score: 40
       category: code_injection
 
   # Regula 8: Detect XXE vulnerabilities (High risk) -> Mark 80 points

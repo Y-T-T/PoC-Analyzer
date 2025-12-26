@@ -48,7 +48,7 @@ rules:
     languages: [javascript, typescript]
     severity: WARNING
     metadata:
-      risk_score: 50
+      risk_score: 30
       category: rce
 
   # Regula 2: Detect reverse shell patterns (High risk) -> Mark 100 points
@@ -109,7 +109,7 @@ rules:
     languages: [javascript, typescript]
     severity: WARNING
     metadata:
-      risk_score: 50
+      risk_score: 30
       category: file_manipulation
 
   # Regula 5: Detect network shell spawn (Critical) -> Mark 90 points

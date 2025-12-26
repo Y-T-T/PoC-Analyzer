@@ -38,7 +38,7 @@ rules:
     languages: [bash, sh]
     severity: ERROR
     metadata:
-      risk_score: 60
+      risk_score: 50
       category: code_injection
 
   # Regula 4: Detect curl | bash download and execute (High risk) -> Mark 80 points

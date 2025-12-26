@@ -16,7 +16,7 @@ rules:
     languages: [php]
     severity: ERROR
     metadata:
-      risk_score: 60
+      risk_score: 30
       category: rce
 
   # Regula 2: Detect dynamic code evaluation (Critical) -> Mark 90 points
@@ -99,7 +99,7 @@ rules:
     languages: [php]
     severity: ERROR
     metadata:
-      risk_score: 70
+      risk_score: 40
       category: rce
 
   # Regula 5: Detect unsafe deserialization (High risk) -> Mark 75 points

@@ -18,7 +18,7 @@ rules:
     languages: [c, cpp]
     severity: ERROR
     metadata:
-      risk_score: 60
+      risk_score: 30
       category: rce
 
   # Regula 2: Detect Windows process creation (High risk) -> Mark 70 points
@@ -35,7 +35,7 @@ rules:
     languages: [c, cpp]
     severity: ERROR
     metadata:
-      risk_score: 70
+      risk_score: 50
       category: rce
 
   # Regula 3: Detect unsafe string functions (High risk) -> Mark 65 points
@@ -52,7 +52,7 @@ rules:
     languages: [c, cpp]
     severity: ERROR
     metadata:
-      risk_score: 30
+      risk_score: 10
       category: memory_corruption
 
   # Regula 4: Detect dangerous memory operations (Medium risk) -> Mark 45 points
@@ -65,7 +65,7 @@ rules:
     languages: [c, cpp]
     severity: WARNING
     metadata:
-      risk_score: 45
+      risk_score: 20
       category: memory_corruption
 
   # Regula 5: Detect reverse shell pattern (Critical) -> Mark 100 points

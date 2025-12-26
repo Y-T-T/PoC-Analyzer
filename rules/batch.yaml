@@ -71,7 +71,7 @@ rules:
     languages: [generic]
     severity: ERROR
     metadata:
-      risk_score: 70
+      risk_score: 50
       category: persistence
 
   # Regula 8: Detect service creation (High risk) -> Mark 65 points
@@ -81,7 +81,7 @@ rules:
     languages: [generic]
     severity: WARNING
     metadata:
-      risk_score: 65
+      risk_score: 40
       category: persistence
 
   # Regula 9: Detect shadow copy deletion (Critical) -> Mark 100 points

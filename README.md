@@ -89,11 +89,19 @@ python PoC_Analyzer.py -c rules/js.yaml poc.js
 
 ### 3. Adjust Sensitivity
 
-The default risk threshold is **150**. You can adjust this to be more aggressive or lenient.
+The default risk threshold is **100**. You can adjust this to be more aggressive or lenient.
 
 ```bash
 # Strict mode: Any score above 80 is considered MALICIOUS
 python PoC_Analyzer.py -c rules/shell.yaml -t 80 poc.sh
+```
+
+### 4. Deep Scan
+
+By default, the analyzer only uses rules relevant to the file's extension (e.g., `.js` files are scanned with `js.yaml`). To scan a file against **ALL** rules (useful for polyglot files or embedded scripts like PowerShell inside JavaScript), use the `--all-rules` flag.
+
+```bash
+python PoC_Analyzer.py --all-rules poc.js
 ```
 
 ---
@@ -112,10 +120,10 @@ The analyzer assigns a verdict based on the calculated **Risk Score**.
 
 * **Socket Connection (`socket`)**: +10 (Essential for many PoCs)
 * **System Command (`os.system`)**: +30 (Common in RCE PoCs)
-* **Obfuscation (`base64 decode`)**: +50 (Suspicious)
+* **Obfuscation (`base64 decode`)**: +80 (High Risk)
 * **Reverse Shell Pattern**: **+100 (Critical Malicious Indicator)**
 
-*Example:* A script containing `eval()` (+50), `base64` (+50), and a network connection (+10) would score **110**. With a threshold of 100, this would be flagged as **MALICIOUS**.
+*Example:* A script containing `eval(base64...)` (+80) and a system command (+30) would score **110**. With a threshold of 100, this would be flagged as **MALICIOUS**.
 
 ---
 

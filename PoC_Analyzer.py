@@ -48,7 +48,7 @@ class PoCAnalyzer:
         '.psm1': ['powershell.yaml', 'common.yaml'],
     }
 
-    def __init__(self, rule_config: str = "rules/", threshold: int = 150):
+    def __init__(self, rule_config: str = "rules/", threshold: int = 100):
         """
         Initialize the analyzer.
         
@@ -494,6 +494,7 @@ if __name__ == "__main__":
         exit(1)
     
     config_path = args.config if args.config else "rules/"
+
     # Initialize the engine
     engine = PoCAnalyzer(rule_config=config_path, threshold=args.threshold)
     

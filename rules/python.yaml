@@ -25,7 +25,7 @@ rules:
     languages: [python]
     severity: WARNING
     metadata:
-      risk_score: 50
+      risk_score: 30
       category: rce
 
   # Regula 2: Detect reverse shell patterns (Critical) -> Mark 100 points
@@ -111,7 +111,7 @@ rules:
     languages: [python]
     severity: WARNING
     metadata:
-      risk_score: 50
+      risk_score: 30
       category: file_manipulation
 
   # Regula 6: Detect network backdoor spawn (Critical) -> Mark 90 points
@@ -166,7 +166,7 @@ rules:
     languages: [python]
     severity: WARNING
     metadata:
-      risk_score: 40
+      risk_score: 20
       category: code_injection
 
   # Regula 9: Detect raw socket usage (Low-Medium risk) -> Mark 20 points
@@ -177,5 +177,5 @@ rules:
     languages: [python]
     severity: WARNING
     metadata:
-      risk_score: 20
+      risk_score: 10
       category: network
