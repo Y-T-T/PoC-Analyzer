@@ -472,8 +472,8 @@ Examples:
     parser.add_argument(
         '-t', '--threshold',
         type=int,
-        default=150,
-        help='Risk score threshold for MALICIOUS verdict (default: 150)'
+        default=100,
+        help='Risk score threshold for MALICIOUS verdict (default: 100)'
     )
     
     parser.add_argument(
