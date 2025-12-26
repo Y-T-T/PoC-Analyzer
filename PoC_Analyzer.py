@@ -30,6 +30,24 @@ class PoCAnalyzer:
         '.ps1', '.psm1'     # PowerShell
     }
 
+    # Mapping extensions to specific rule files
+    RULE_MAPPING = {
+        '.py': ['python.yaml', 'common.yaml'],
+        '.js': ['js.yaml', 'common.yaml'],
+        '.ts': ['js.yaml', 'common.yaml'],
+        '.c': ['c.yaml', 'common.yaml'],
+        '.cpp': ['c.yaml', 'common.yaml'],
+        '.h': ['c.yaml', 'common.yaml'],
+        '.php': ['php.yaml', 'common.yaml'],
+        '.java': ['java.yaml', 'common.yaml'],
+        '.go': ['go.yaml', 'common.yaml'],
+        '.sh': ['shell.yaml', 'common.yaml'],
+        '.bat': ['batch.yaml', 'common.yaml'],
+        '.cmd': ['batch.yaml', 'common.yaml'],
+        '.ps1': ['powershell.yaml', 'common.yaml'],
+        '.psm1': ['powershell.yaml', 'common.yaml'],
+    }
+
     def __init__(self, rule_config: str = "rules/", threshold: int = 150):
         """
         Initialize the analyzer.
@@ -59,9 +77,32 @@ class PoCAnalyzer:
 
     def _run_semgrep(self, filepath: str) -> Dict[str, Any]:
         """Internal method to execute the semgrep CLI process."""
+        
+        # Determine which config to use
+        config_args = []
+        
+        # If rule_config is a directory, try to be smart about which rules to apply
+        if os.path.isdir(self.rule_config):
+            _, ext = os.path.splitext(filepath)
+            ext = ext.lower()
+            
+            if ext in self.RULE_MAPPING:
+                # Use specific rules for this language
+                for rule_file in self.RULE_MAPPING[ext]:
+                    full_path = os.path.join(self.rule_config, rule_file)
+                    if os.path.exists(full_path):
+                        config_args.extend(["--config", full_path])
+            
+            # Fallback: if no mapping or files don't exist, use the whole directory
+            if not config_args:
+                config_args = ["--config", self.rule_config]
+        else:
+            # User provided a specific file, use it
+            config_args = ["--config", self.rule_config]
+
         cmd = [
             "semgrep",
-            "--config", self.rule_config,
+            *config_args,
             "--json",
             "--quiet", # Suppress progress bars
             filepath
@@ -179,6 +220,69 @@ class PoCAnalyzer:
             "unique_findings": analysis["unique_findings"]
         }
     
+    def scan_directory(self, directory: str, console: Console = None):
+        """Recursively scan a directory."""
+        if console is None: console = Console()
+        
+        console.print(f"\n[bold cyan]📂 Scanning Directory: {directory}[/bold cyan]\n")
+        
+        stats = {"MALICIOUS": 0, "SUSPICIOUS": 0, "SAFE": 0, "SKIPPED": 0}
+        results = []
+
+        # Use a status spinner to show progress
+        with console.status("[bold green]Scanning files...[/bold green]") as status:
+            for root, _, files in os.walk(directory):
+                for file in files:
+                    _, ext = os.path.splitext(file)
+                    if ext.lower() in self.valid_extensions:
+                        filepath = os.path.join(root, file)
+                        status.update(f"[bold green]Scanning: {file}[/bold green]")
+                        
+                        # Analyze each file
+                        report = self.analyze(filepath)
+                        verdict = report.get('verdict', 'SKIPPED')
+                        stats[verdict] = stats.get(verdict, 0) + 1
+                        
+                        # Store for summary                        
+                        self.print_report(report, console)
+                        results.append(report)
+
+        # Print Summary Table at the end
+        if results:
+            console.print("\n[bold]📊 Directory Scan Summary[/bold]")
+            summary_table = Table(box=box.SIMPLE_HEAD)
+            summary_table.add_column("File", style="cyan")
+            summary_table.add_column("Verdict", justify="center")
+            summary_table.add_column("Score", justify="right")
+            
+            for res in results:
+                v = res['verdict']
+                if v == "MALICIOUS":
+                    color = "red"
+                elif v == "SUSPICIOUS":
+                    color = "yellow"
+                else:
+                    color = "green"
+                summary_table.add_row(
+                    res['filepath'],
+                    f"[{color}]{v}[/{color}]",
+                    str(res['risk_score'])
+                )
+            console.print(summary_table)
+
+        # Final Statistics
+        total = sum(stats.values())
+        console.print(f"\n[dim]Scanned {total} files.[/dim]")
+        
+        if stats["MALICIOUS"] > 0:
+            console.print(f"[bold red]🚨 Directory Scan Complete: Found {stats['MALICIOUS']} malicious files![/bold red]")
+        elif stats["SUSPICIOUS"] > 0:
+            console.print(f"[bold yellow]⚠️  Directory Scan Complete: Found {stats['SUSPICIOUS']} suspicious files.[/bold yellow]")
+        else:
+            console.print(f"[bold green]✅ Directory Scan Complete: No threats found.[/bold green]")
+        
+        return results
+
     def print_report(self, report: Dict[str, Any], console: Console = None):
         """
         Print a formatted analysis report using Rich.
@@ -271,6 +375,54 @@ class PoCAnalyzer:
         else:
             console.print("\n[green]✅ No threats detected.[/green]\n")
     
+    def print_directory_summary(self, reports: list[Dict[str, Any]], console: Console = None):
+        """
+        Print a summary for a directory scan.
+        :param reports: A list of all file reports from the directory scan.
+        :param console: Rich Console instance (optional).
+        """
+        if console is None:
+            console = Console()
+
+        total_files = len(reports)
+        malicious_files = 0
+        suspicious_files = 0
+        safe_files = 0
+        skipped_files = 0
+
+        # First, print individual reports for files with risk
+        console.print("\n[bold underline]Detailed File Reports:[/bold underline]\n")
+        has_findings = False
+        for report in reports:
+            if report['verdict'] == "SKIPPED":
+                skipped_files += 1
+            elif report['risk_score'] > 0:
+                self.print_report(report, console)
+                has_findings = True
+                if report['verdict'] == "MALICIOUS":
+                    malicious_files += 1
+                elif report['verdict'] == "SUSPICIOUS":
+                    suspicious_files += 1
+            else:
+                safe_files += 1
+        
+        if not has_findings:
+            console.print("[green]✅ No individual threats to report.[/green]\n")
+
+        # Then, print a final directory summary
+        summary = f"""[bold]Total Files Scanned:[/bold] {total_files}
+[bold green]SAFE Files:[/bold green] {safe_files}
+[bold yellow]SUSPICIOUS Files:[/bold yellow] {suspicious_files}
+[bold red]MALICIOUS Files:[/bold red] {malicious_files}
+[bold dim]SKIPPED Files (Unsupported Ext):[/bold dim] {skipped_files}"""
+
+        console.print(Panel(
+            summary,
+            title="[bold]Directory Scan Summary[/bold]",
+            border_style="blue",
+            box=box.ROUNDED
+        ))
+    
     def scan_and_report(self, filepath: str, console: Console = None):
         """
         Convenience method to scan a file and print the report.
@@ -284,9 +436,12 @@ class PoCAnalyzer:
         console.print(f"\n[cyan]🔍 Scanning {filepath}...[/cyan]\n")
         
         try:
-            report = self.analyze(filepath)
-            self.print_report(report, console)
-            return report
+            if os.path.isdir(filepath):
+                return self.scan_directory(filepath, console)
+            else:
+                report = self.analyze(filepath)
+                self.print_report(report, console)
+                return report
         except Exception as e:
             console.print(f"[bold red]❌ Scan failed: {e}[/bold red]")
             raise

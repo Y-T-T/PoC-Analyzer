@@ -4,3 +4,4 @@ test
 test_PoC/
 __pycache__/
 *.pyc
+.python-version
