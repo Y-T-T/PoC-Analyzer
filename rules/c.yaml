@@ -52,7 +52,7 @@ rules:
     languages: [c, cpp]
     severity: ERROR
     metadata:
-      risk_score: 65
+      risk_score: 30
       category: memory_corruption
 
   # Regula 4: Detect dangerous memory operations (Medium risk) -> Mark 45 points
@@ -202,7 +202,7 @@ rules:
     languages: [c, cpp]
     severity: ERROR
     metadata:
-      risk_score: 70
+      risk_score: 30
       category: memory_corruption
 
   # Regula 12: Detect anti-debugging techniques (Medium risk) -> Mark 35 points

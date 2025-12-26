@@ -476,6 +476,12 @@ Examples:
         help='Risk score threshold for MALICIOUS verdict (default: 150)'
     )
     
+    parser.add_argument(
+        '--all-rules',
+        action='store_true',
+        help='Force scan with ALL rules (ignore extension mapping). Useful for deep inspection.'
+    )
+    
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -490,6 +496,11 @@ if __name__ == "__main__":
     config_path = args.config if args.config else "rules/"
     # Initialize the engine
     engine = PoCAnalyzer(rule_config=config_path, threshold=args.threshold)
+    
+    # If --all-rules is set, clear the mapping to force full scan
+    if args.all_rules:
+        engine.RULE_MAPPING = {}
+        console.print("[yellow]⚠️  Deep Scan Mode: Using ALL rules for analysis.[/yellow]")
 
     # Scan and print report
     try:
