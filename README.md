@@ -166,7 +166,9 @@ metadata:
 
 **This tool is for educational and defensive purposes only.**
 
-Do not use this tool to analyze code you do not have permission to access. The author assumes no liability for any direct or indirect damage caused by the use or misuse of this tool. **Always analyze untrusted PoCs in an isolated Sandbox environment.**
+1.  **No Warranty**: The software is provided "as is", without warranty of any kind. The author assumes no liability for any direct or indirect damage caused by the use or misuse of this tool.
+2.  **False Sense of Security**: Static analysis cannot guarantee 100% accuracy. A file marked as "SAFE" may still contain undetected malicious code. **Never execute untrusted PoCs based solely on this tool's verdict.**
+3.  **Sandbox Required**: Always analyze and test untrusted PoCs in an isolated Sandbox environment (e.g., VM, Docker).
 
 ---
 
