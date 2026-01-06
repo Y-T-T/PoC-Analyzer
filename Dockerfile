@@ -16,5 +16,7 @@ RUN unzip -P infected test_samples.zip && rm test_samples.zip
 RUN useradd -m analyzer
 USER analyzer
 
+ENV TERM=xterm-256color
+ENV FORCE_COLOR=1
 ENTRYPOINT ["python", "PoC_Analyzer.py"]
 CMD ["-h"]

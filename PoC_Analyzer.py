@@ -336,7 +336,7 @@ class PoCAnalyzer:
                 else:
                     score_color = "green"
                 
-                # Category emoji
+                # Category tag mapping
                 category_map = {
                     "backdoor": "[BACKDOOR]",
                     "rce": "[RCE]",
@@ -348,12 +348,16 @@ class PoCAnalyzer:
                     "network": "[NETWORK]",
                     "info_leak": "[INFO_LEAK]",
                     "abuse": "[ABUSE]",
+                    "destruction": "[DESTRUCTION]",
                     "memory_corruption": "[MEMORY]",
                     "privilege_escalation": "[PRIV_ESC]",
                     "evasion": "[EVASION]",
                     "weak_crypto": "[WEAK_CRYPTO]",
                     "sql_injection": "[SQL_INJECTION]",
-                    "xxe": "[XXE]"
+                    "xxe": "[XXE]",
+                    "persistence": "[PERSISTENCE]",
+                    "malware-dropper": "[DROPPER]",
+                    "defense-evasion": "[DEF_EVASION]"
                 }
                 category_display = category_map.get(f['category'], f['category'])
                 
