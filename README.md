@@ -50,7 +50,7 @@ PoC-Analyzer/
 
 ---
 
-## ⚠️ Test Samples
+## Test Samples
 The test cases are encrypted to prevent antivirus false positives. Unzip test_samples.zip in Sandbox environment with password: `infected` to run the tests.
 
 ---
@@ -162,11 +162,11 @@ python PoC_Analyzer.py --all-rules poc.js
 
 The analyzer assigns a verdict based on the calculated **Risk Score**.
 
-| Verdict | Icon | Condition | Description |
+| Verdict | Tag | Condition | Description |
 | --- | --- | --- | --- |
-| **SAFE** | ✅ | Score < Threshold / 2 | Low risk. Likely a legitimate PoC or tool. |
-| **SUSPICIOUS** | ⚠️ | Score ≥ Threshold / 2 | Contains some dangerous patterns (e.g., system calls), but lacks definitive malicious intent. Manual review recommended. |
-| **MALICIOUS** | 🚨 | Score ≥ Threshold | **High Risk.** Clear indicators of backdoor behavior (e.g., Reverse Shell, Obfuscated Execution, Droppers). |
+| **SAFE** | `[SAFE]` | Score < Threshold / 2 | Low risk. Likely a legitimate PoC or tool. |
+| **SUSPICIOUS** | `[SUSPICIOUS]` | Score ≥ Threshold / 2 | Contains some dangerous patterns (e.g., system calls), but lacks definitive malicious intent. Manual review recommended. |
+| **MALICIOUS** | `[MALICIOUS]` | Score ≥ Threshold | **High Risk.** Clear indicators of backdoor behavior (e.g., Reverse Shell, Obfuscated Execution, Droppers). |
 
 ### Scoring Examples
 
@@ -214,7 +214,7 @@ metadata:
 
 ---
 
-## ⚠️ Disclaimer
+## Disclaimer
 
 **This tool is for educational and defensive purposes only.**
 
