@@ -59,7 +59,13 @@ The test cases are encrypted to prevent antivirus false positives. Unzip test_sa
 
 Running PoC Analyzer in an isolated container is the safest way to handle potential malicious samples and avoids local dependency issues.
 
-### 1. Build the Image
+### 1. Clone the repository:
+```bash
+git clone https://github.com/Y-T-T/PoC-Analyzer.git
+cd PoC-Analyzer
+```
+
+### 2. Build the Image
 
 Build the Docker image from the source directory.
 
@@ -69,7 +75,7 @@ Build the Docker image from the source directory.
 docker build -t poc-analyzer .
 ```
 
-### 2. Run Scenarios
+### 3. Run Scenarios
 
 **Scenario A: View Help (Default)**
 Running the container without arguments will display the help menu.
