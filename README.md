@@ -1,6 +1,6 @@
 # PoC Analyzer (Proof-of-Concept Malicious Intent Detector)
 
-![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python) ![Semgrep](https://img.shields.io/badge/Engine-Semgrep-green) ![License](https://img.shields.io/badge/License-MIT-purple) ![Status](https://img.shields.io/badge/Status-Beta-orange)
+![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python) ![Semgrep](https://img.shields.io/badge/Engine-Semgrep-green) ![License](https://img.shields.io/badge/License-MIT-purple) ![Status](https://img.shields.io/badge/Status-Beta-orange)
 
 Unlike traditional SAST tools that search for *vulnerabilities* in code, PoC Analyzer scans for **Malicious Intent**. It is built to validate third-party Proof-of-Concept (PoC) scripts downloaded from GitHub, Exploit-DB, or other public sources, ensuring they do not contain hidden backdoors, reverse shells, or malware droppers before you execute them.
 
@@ -54,9 +54,52 @@ The test cases are encrypted to prevent antivirus false positives. Unzip test_sa
 
 ---
 
-## Installation
+## Docker Usage (Recommended)
 
-### Prerequisites
+Running PoC Analyzer in an isolated container is the safest way to handle potential malicious samples and avoids local dependency issues.
+
+### 1. Build the Image
+
+Build the Docker image from the source directory.
+
+> **Note:** Ensure `test_samples.zip` exists in the directory before running the build command.
+
+```bash
+docker build -t poc-analyzer .
+```
+
+### 2. Run Scenarios
+
+**Scenario A: View Help (Default)**
+Running the container without arguments will display the help menu.
+
+```bash
+docker run --rm poc-analyzer
+```
+
+**Scenario B: Scan Internal Test Samples**
+The image comes with pre-packaged test samples (extracted during the build process). You can test the analyzer against them immediately.
+
+```bash
+docker run --rm poc-analyzer test_PoC/malicious_test.js
+```
+
+**Scenario C: Scan Local Files (Recommended)**
+To scan files on your host machine, mount your current directory (`$(pwd)`) to a volume inside the container (e.g., `/scan`).
+
+```bash
+# Scan a specific file
+docker run --rm -v "$(pwd):/scan" poc-analyzer /scan/poc.py
+
+# Scan an entire directory
+docker run --rm -v "$(pwd):/scan" poc-analyzer /scan/
+```
+
+---
+
+## Local Installation
+
+If you prefer running it natively:
 
 1. **Clone the repository:**
 ```bash
@@ -64,14 +107,16 @@ git clone https://github.com/Y-T-T/PoC-Analyzer.git
 cd PoC-Analyzer
 ```
 
-2. **Install dependencies:**
+2. **Install dependencies:** Ensure you have Python 3.11+ and Semgrep installed.
 ```bash
 pip install -r requirements.txt
 ```
 
-## Usage
+3. **Run the analyzer:** See the usage examples below.
 
-### 1. Basic Scan (Recommended)
+## Advanced Usage
+
+### 1. Basic Scan
 
 By default, the analyzer scans the target file using all rules found in the local `rules/` directory. It automatically filters rules based on the file extension.
 

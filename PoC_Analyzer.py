@@ -62,7 +62,7 @@ class PoCAnalyzer:
             self.rule_config = os.path.join("rules", rule_config)
         else:
             self.rule_config = rule_config
-            console.print(f"[yellow]⚠️ Warning: Config '{rule_config}' not found locally or in rules/ dir.[/yellow]")
+            console.print(f"[yellow][WARNING] Warning: Config '{rule_config}' not found locally or in rules/ dir.[/yellow]")
 
         self.threshold = threshold
         self.valid_extensions: Set[str] = self.DEFAULT_EXTENSIONS
@@ -224,7 +224,7 @@ class PoCAnalyzer:
         """Recursively scan a directory."""
         if console is None: console = Console()
         
-        console.print(f"\n[bold cyan]📂 Scanning Directory: {directory}[/bold cyan]\n")
+        console.print(f"\n[bold cyan][DIRECTORY] Scanning Directory: {directory}[/bold cyan]\n")
         
         stats = {"MALICIOUS": 0, "SUSPICIOUS": 0, "SAFE": 0, "SKIPPED": 0}
         results = []
@@ -249,7 +249,7 @@ class PoCAnalyzer:
 
         # Print Summary Table at the end
         if results:
-            console.print("\n[bold]📊 Directory Scan Summary[/bold]")
+            console.print("\n[bold][SUMMARY] Directory Scan Summary[/bold]")
             summary_table = Table(box=box.SIMPLE_HEAD)
             summary_table.add_column("File", style="cyan")
             summary_table.add_column("Verdict", justify="center")
@@ -275,11 +275,11 @@ class PoCAnalyzer:
         console.print(f"\n[dim]Scanned {total} files.[/dim]")
         
         if stats["MALICIOUS"] > 0:
-            console.print(f"[bold red]🚨 Directory Scan Complete: Found {stats['MALICIOUS']} malicious files![/bold red]")
+            console.print(f"[bold red][MALICIOUS] Directory Scan Complete: Found {stats['MALICIOUS']} malicious files![/bold red]")
         elif stats["SUSPICIOUS"] > 0:
-            console.print(f"[bold yellow]⚠️  Directory Scan Complete: Found {stats['SUSPICIOUS']} suspicious files.[/bold yellow]")
+            console.print(f"[bold yellow][WARNING] Directory Scan Complete: Found {stats['SUSPICIOUS']} suspicious files.[/bold yellow]")
         else:
-            console.print(f"[bold green]✅ Directory Scan Complete: No threats found.[/bold green]")
+            console.print(f"[bold green][SAFE] Directory Scan Complete: No threats found.[/bold green]")
         
         return results
 
@@ -300,13 +300,13 @@ class PoCAnalyzer:
         
         if verdict == "MALICIOUS":
             verdict_color = "red"
-            verdict_icon = "🚨"
+            verdict_icon = "[MALICIOUS]"
         elif verdict == "SUSPICIOUS":
             verdict_color = "yellow"
-            verdict_icon = "⚠️"
+            verdict_icon = "[SUSPICIOUS]"
         else:
             verdict_color = "green"
-            verdict_icon = "✅"
+            verdict_icon = "[SAFE]"
         
         # Create summary panel
         summary = f"""[bold]File:[/bold] {report['filepath']}
@@ -317,7 +317,7 @@ class PoCAnalyzer:
         console.print(Panel(summary, title="[bold]Analysis Report[/bold]", border_style=verdict_color, box=box.ROUNDED))
         
         if report['findings']:
-            console.print(f"\n[bold yellow]⚠️  Risk Indicators Detected:[/bold yellow]\n")
+            console.print(f"\n[bold yellow][!] Risk Indicators Detected:[/bold yellow]\n")
             
             # Create findings table
             table = Table(show_header=True, header_style="bold magenta", box=box.SIMPLE)
@@ -338,22 +338,22 @@ class PoCAnalyzer:
                 
                 # Category emoji
                 category_map = {
-                    "backdoor": "🔴 backdoor",
-                    "rce": "💣 rce",
-                    "obfuscation": "🎭 obfuscation",
-                    "file_manipulation": "📁 file_ops",
-                    "credential_leak": "🔑 credentials",
-                    "deserialization": "⚠️ deserialize",
-                    "code_injection": "💉 code_inject",
-                    "network": "🌐 network",
-                    "info_leak": "ℹ️ info_leak",
-                    "abuse": "🚫 abuse",
-                    "memory_corruption": "💥 memory",
-                    "privilege_escalation": "👑 priv_esc",
-                    "evasion": "🥷 evasion",
-                    "weak_crypto": "🔓 weak_crypto",
-                    "sql_injection": "💉 sql_inject",
-                    "xxe": "📄 xxe"
+                    "backdoor": "[BACKDOOR]",
+                    "rce": "[RCE]",
+                    "obfuscation": "[OBFUSCATION]",
+                    "file_manipulation": "[FILE_OPS]",
+                    "credential_leak": "[CREDENTIALS]",
+                    "deserialization": "[DESERIALIZATION]",
+                    "code_injection": "[CODE_INJECTION]",
+                    "network": "[NETWORK]",
+                    "info_leak": "[INFO_LEAK]",
+                    "abuse": "[ABUSE]",
+                    "memory_corruption": "[MEMORY]",
+                    "privilege_escalation": "[PRIV_ESC]",
+                    "evasion": "[EVASION]",
+                    "weak_crypto": "[WEAK_CRYPTO]",
+                    "sql_injection": "[SQL_INJECTION]",
+                    "xxe": "[XXE]"
                 }
                 category_display = category_map.get(f['category'], f['category'])
                 
@@ -373,7 +373,7 @@ class PoCAnalyzer:
             dedup_info = f"[dim]Found {total_count} total detections, deduplicated to {unique_count} unique threats.[/dim]"
             console.print(f"\n{dedup_info}\n")
         else:
-            console.print("\n[green]✅ No threats detected.[/green]\n")
+            console.print("\n[green][SAFE] No threats detected.[/green]\n")
     
     def print_directory_summary(self, reports: list[Dict[str, Any]], console: Console = None):
         """
@@ -407,7 +407,7 @@ class PoCAnalyzer:
                 safe_files += 1
         
         if not has_findings:
-            console.print("[green]✅ No individual threats to report.[/green]\n")
+            console.print("[green][SAFE] No individual threats to report.[/green]\n")
 
         # Then, print a final directory summary
         summary = f"""[bold]Total Files Scanned:[/bold] {total_files}
@@ -433,7 +433,7 @@ class PoCAnalyzer:
         if console is None:
             console = Console()
         
-        console.print(f"\n[cyan]🔍 Scanning {filepath}...[/cyan]\n")
+        console.print(f"\n[cyan][SCAN] Scanning {filepath}...[/cyan]\n")
         
         try:
             if os.path.isdir(filepath):
@@ -443,7 +443,7 @@ class PoCAnalyzer:
                 self.print_report(report, console)
                 return report
         except Exception as e:
-            console.print(f"[bold red]❌ Scan failed: {e}[/bold red]")
+            console.print(f"[bold red][ERROR] Scan failed: {e}[/bold red]")
             raise
 
 def parse_arguments():
@@ -490,7 +490,7 @@ if __name__ == "__main__":
     
     # Check if file exists
     if not os.path.exists(args.filepath):
-        console.print(f"[bold red]❌ Error: File '{args.filepath}' not found.[/bold red]")
+        console.print(f"[bold red][ERROR] Error: File '{args.filepath}' not found.[/bold red]")
         exit(1)
     
     config_path = args.config if args.config else "rules/"
@@ -501,7 +501,7 @@ if __name__ == "__main__":
     # If --all-rules is set, clear the mapping to force full scan
     if args.all_rules:
         engine.RULE_MAPPING = {}
-        console.print("[yellow]⚠️  Deep Scan Mode: Using ALL rules for analysis.[/yellow]")
+        console.print("[yellow][WARNING] Deep Scan Mode: Using ALL rules for analysis.[/yellow]")
 
     # Scan and print report
     try:
