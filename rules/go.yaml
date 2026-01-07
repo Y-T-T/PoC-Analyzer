@@ -15,7 +15,7 @@ rules:
     languages: [go]
     severity: WARNING
     metadata:
-      risk_score: 30
+      risk_score: 50
       category: rce
 
   # Regula 2: Detect command execution with shell (High risk) -> Mark 70 points
