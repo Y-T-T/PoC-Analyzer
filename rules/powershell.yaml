@@ -42,7 +42,7 @@ rules:
       risk_score: 70
       category: defense-evasion
 
-  # Regula 4: Detect hidden window execution (Medium risk) -> Mark 50 points
+  # Regula 4: Detect hidden window execution (Medium risk) -> Mark 30 points
   - id: ps-hidden-window
     patterns:
       - pattern-regex: "(?i)-w(indowstyle)?\\s+(hidden|1)"

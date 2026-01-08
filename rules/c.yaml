@@ -3,7 +3,7 @@
 # ==========================================
 
 rules:
-  # Regula 1: Detect direct system command execution (High risk) -> Mark 60 points
+  # Regula 1: Detect direct system command execution (High risk) -> Mark 30 points
   - id: c-system-command
     pattern-either:
       - pattern: system(...)
@@ -21,7 +21,7 @@ rules:
       risk_score: 30
       category: rce
 
-  # Regula 2: Detect Windows process creation (High risk) -> Mark 70 points
+  # Regula 2: Detect Windows process creation (High risk) -> Mark 50 points
   - id: c-windows-shell-execution
     pattern-either:
       - pattern: ShellExecute(...)
@@ -38,7 +38,7 @@ rules:
       risk_score: 50
       category: rce
 
-  # Regula 3: Detect unsafe string functions (High risk) -> Mark 65 points
+  # Regula 3: Detect unsafe string functions (High risk) -> Mark 10 points
   - id: c-unsafe-string-functions
     pattern-either:
       - pattern: strcpy($DST, ...)
@@ -55,7 +55,7 @@ rules:
       risk_score: 10
       category: memory_corruption
 
-  # Regula 4: Detect dangerous memory operations (Medium risk) -> Mark 45 points
+  # Regula 4: Detect dangerous memory operations (Medium risk) -> Mark 20 points
   - id: c-dangerous-memory-ops
     pattern-either:
       - pattern: memcpy($DST, $SRC, $SIZE)
@@ -189,7 +189,7 @@ rules:
       risk_score: 40
       category: code_injection
 
-  # Regula 11: Detect format string vulnerabilities (High risk) -> Mark 70 points
+  # Regula 11: Detect format string vulnerabilities (High risk) -> Mark 30 points
   - id: c-format-string-vuln
     patterns:
       - pattern-either:

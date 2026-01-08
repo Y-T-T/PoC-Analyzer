@@ -3,7 +3,7 @@
 # ==========================================
 
 rules:
-  # Regula 1: Detect dangerous subprocess execution (Medium risk) -> Mark 40 points
+  # Regula 1: Detect dangerous subprocess execution (Medium risk) -> Mark 30 points
   - id: python-dangerous-subprocess
     pattern-either:
       - pattern: subprocess.call(...)
@@ -97,7 +97,7 @@ rules:
       risk_score: 70
       category: deserialization
 
-  # Regula 5: Detect sensitive file operations (Medium risk) -> Mark 50 points
+  # Regula 5: Detect sensitive file operations (Medium risk) -> Mark 30 points
   - id: python-sensitive-file-ops
     patterns:
       - pattern-either:
@@ -155,7 +155,7 @@ rules:
       risk_score: 30
       category: credential_leak
 
-  # Regula 8: Detect dynamic code loading (Medium risk) -> Mark 40 points
+  # Regula 8: Detect dynamic code loading (Medium risk) -> Mark 20 points
   - id: python-dynamic-import
     pattern-either:
       - pattern: __import__($STR)

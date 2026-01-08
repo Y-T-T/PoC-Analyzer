@@ -3,7 +3,7 @@
 # ==========================================
 
 rules:
-  # Regula 1: Detect Runtime.exec and ProcessBuilder usage (Medium-High risk) -> Mark 60 points
+  # Regula 1: Detect Runtime.exec and ProcessBuilder usage (Medium-High risk) -> Mark 30 points
   - id: java-runtime-exec
     pattern-either:
       - pattern: Runtime.getRuntime().exec(...)
@@ -70,7 +70,7 @@ rules:
       risk_score: 100
       category: code_injection
 
-  # Regula 6: Detect dangerous reflection usage (High risk) -> Mark 70 points
+  # Regula 6: Detect dangerous reflection usage (High risk) -> Mark 40 points
   - id: java-reflection-loading
     pattern-either:
       - pattern: Class.forName($VAR)
@@ -89,7 +89,7 @@ rules:
       risk_score: 40
       category: code_injection
 
-  # Regula 7: Detect JNI library loading (High risk) -> Mark 65 points
+  # Regula 7: Detect JNI library loading (High risk) -> Mark 40 points
   - id: java-jni-loading
     pattern-either:
       - pattern: System.loadLibrary($LIB)

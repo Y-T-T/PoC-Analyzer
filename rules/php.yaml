@@ -3,7 +3,7 @@
 # ==========================================
 
 rules:
-  # Regula 1: Detect OS command injection functions (High risk) -> Mark 60 points
+  # Regula 1: Detect OS command injection functions (High risk) -> Mark 30 points
   - id: php-system-exec
     pattern-either:
       - pattern: system(...)
@@ -72,7 +72,7 @@ rules:
       risk_score: 100
       category: backdoor
 
-  # Regula 4: Detect dangerous file inclusion (High risk) -> Mark 70 points
+  # Regula 4: Detect dangerous file inclusion (High risk) -> Mark 40 points
   - id: php-dangerous-include
     pattern-either:
       - patterns:

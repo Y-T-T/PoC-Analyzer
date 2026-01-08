@@ -3,7 +3,7 @@
 # ==========================================
 
 rules:
-  # Regula 1: Detect dangerous exec/spawn usage (Medium risk) -> Mark 40 points
+  # Regula 1: Detect dangerous exec/spawn usage (Medium risk) -> Mark 30 points
   - id: js-dangerous-exec
     pattern-either:
       - pattern: require('child_process').exec(...)
@@ -95,7 +95,7 @@ rules:
       risk_score: 80
       category: obfuscation
 
-  # Regula 4: Detect dangerous file operations (Medium risk) -> Mark 50 points
+  # Regula 4: Detect dangerous file operations (Medium risk) -> Mark 30 points
   - id: js-dangerous-file-ops
     pattern-either:
       - pattern: $FS.unlinkSync(...)
