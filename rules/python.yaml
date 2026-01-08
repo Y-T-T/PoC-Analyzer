@@ -3,7 +3,7 @@
 # ==========================================
 
 rules:
-  # Regula 1: Detect dangerous subprocess execution (Medium risk) -> Mark 30 points
+  # Regula 1: Detect dangerous subprocess execution (Medium risk) -> Mark 50 points
   - id: python-dangerous-subprocess
     pattern-either:
       - pattern: subprocess.call(...)
@@ -25,7 +25,7 @@ rules:
     languages: [python]
     severity: WARNING
     metadata:
-      risk_score: 30
+      risk_score: 50
       category: rce
 
   # Regula 2: Detect reverse shell patterns (Critical) -> Mark 100 points
