@@ -23,18 +23,12 @@ Unlike traditional SAST tools that search for *vulnerabilities* in code, PoC Ana
 
 ---
 
-## Project Structure
+## Rules Path
 
-To ensure the analyzer works correctly, organize your directory as follows:
+The default rules are organized as follows:
 
 ```text
-PoC-Analyzer/
-├── PoC_Analyzer.py            # Main Analysis Engine
-├── README.md                  # Documentation
-├── requirements.txt           # Python dependencies
-├── Dockerfile                 # Dockerfile for containerized usage
-├── test_samples.zip           # Encrypted test samples (password: infected)
-└── rules/                     # Semgrep Rule Definitions
+└── rules/                 # Semgrep Rule Definitions
     ├── common.yaml        # Cross-language secrets IoCs
     ├── c.yaml             # C/C++ rules
     ├── php.yaml           # PHP specific rules
