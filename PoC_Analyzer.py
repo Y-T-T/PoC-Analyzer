@@ -157,8 +157,7 @@ class PoCAnalyzer:
             print(f"[!] System Error: {str(e)}")
             return {"results": []}
 
-    @staticmethod
-    def _calculate_risk(findings: Dict[str, Any]) -> Dict[str, Any]:
+    def _calculate_risk(self, findings: Dict[str, Any]) -> Dict[str, Any]:
         """
         Process raw findings and calculate total risk score.
         Uses deduplication: same line + same category -> only count highest score.
@@ -207,6 +206,52 @@ class PoCAnalyzer:
             "unique_findings": list(line_category_map.values())  # Deduplicated list
         }
 
+    def _check_blacklist(self, filepath: str) -> list[Dict[str, Any]]:
+        """
+        Check file content against blacklist.txt using simple regex.
+        Returns a list of 'finding' dicts if matches are found.
+        """
+        blacklist_path = os.path.join(os.path.dirname(self.rule_config), "data", "blacklist.txt")
+        # Fallback if rule_config is a file not dir
+        if not os.path.exists(blacklist_path):
+             blacklist_path = os.path.join("rules", "data", "blacklist.txt")
+             
+        if not os.path.exists(blacklist_path):
+            return []
+
+        findings = []
+        try:
+            with open(blacklist_path, "r") as f:
+                patterns = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+            
+            if not patterns:
+                return []
+                
+            # Compile regex pattern (OR logic)
+            # Escape dots is handled by user in blacklist file or assumed raw
+            # Ideally user provides regex-ready strings, or we escape them.
+            # For simplicity, we assume the blacklist contains regex fragments.
+            full_pattern = "|".join(patterns)
+            import re
+            regex = re.compile(full_pattern, re.IGNORECASE)
+
+            with open(filepath, "r", errors="ignore") as f:
+                for i, line in enumerate(f, 1):
+                    match = regex.search(line)
+                    if match:
+                        findings.append({
+                            "rule": "custom-blacklist-match",
+                            "score": 100,
+                            "category": "malicious-domain",
+                            "message": f"[Critical] Blacklisted IP/Domain detected: '{match.group(0)}'",
+                            "line": i
+                        })
+        except Exception as e:
+            # console.print(f"[red]Blacklist check error: {e}[/red]")
+            pass
+            
+        return findings
+
     def analyze(self, filepath: str) -> Dict[str, Any]:
         """
         Public interface to scan a file.
@@ -225,17 +270,38 @@ class PoCAnalyzer:
             }
 
 
-        # 1. Static Scan
+        # 1. Static Scan (Semgrep)
         raw_data = self._run_semgrep(filepath)
         
-        # 2. Risk Calculation
+        # 2. Risk Calculation (Semgrep)
         analysis = self._calculate_risk(raw_data)
-        score = analysis["total_score"]
         
-        # 3. Final Verdict
-        if score >= self.threshold:
+        # 3. Dynamic Blacklist Check (Python)
+        blacklist_findings = self._check_blacklist(filepath)
+        
+        # Merge Semgrep findings with Blacklist findings
+        final_findings = analysis["details"] + blacklist_findings
+        
+        # Re-deduplicate with the new findings included
+        # We reuse the logic from _calculate_risk but apply it to the merged list locally
+        line_category_map = {}
+        # Pre-fill map with existing unique findings
+        for f in analysis["unique_findings"]:
+             line_category_map[(f['line'], f['category'])] = f
+        
+        # Add blacklist findings (they likely have score 100, so they override)
+        for f in blacklist_findings:
+            key = (f['line'], f['category'])
+            if key not in line_category_map or f['score'] > line_category_map[key]['score']:
+                line_category_map[key] = f
+        
+        unique_findings = list(line_category_map.values())
+        total_score = sum(f["score"] for f in unique_findings)
+        
+        # 4. Final Verdict
+        if total_score >= self.threshold:
             verdict = "MALICIOUS"
-        elif score >= (self.threshold / 2):
+        elif total_score > 0:
             verdict = "SUSPICIOUS"
         else:
             verdict = "SAFE"
@@ -243,10 +309,10 @@ class PoCAnalyzer:
         return {
             "filepath": filepath,
             "verdict": verdict,
-            "risk_score": score,
+            "risk_score": total_score,
             "threshold": self.threshold,
-            "findings": analysis["details"],
-            "unique_findings": analysis["unique_findings"]
+            "findings": final_findings,
+            "unique_findings": unique_findings
         }
     
     def scan_directory(self, directory: str, console: Console = None, max_workers: int = 8):
@@ -352,46 +418,69 @@ class PoCAnalyzer:
 
         # 5. Summary
         results.sort(key=lambda x: x['risk_score'], reverse=True)
-        console.print("\n[bold][SUMMARY] Scan Results[/bold]")
-        summary_table = Table(box=box.SIMPLE_HEAD, show_lines=False)
-        summary_table.add_column("Verdict", justify="center", width=12)
-        summary_table.add_column("Score", justify="right", width=6)
-        summary_table.add_column("File Path", style="dim")
-        summary_table.add_column("Threat", style="red")
+        
+        # Show all files with score > 0, even if SAFE
+        threat_results = [r for r in results if r['risk_score'] > 0]
 
-        for res in results:
-            v = res['verdict']
-            if v == "SAFE": continue 
+        # Detailed Threat Analysis
+        # if threat_results:
+        #     console.print("\n[bold underline]Detailed Threat Analysis:[/bold underline]")
+        #     for res in threat_results:
+        #         self.print_report(res, console)
+        
+        if threat_results:
+            console.print("\n[bold][SUMMARY] Scan Results[/bold]")
+            summary_table = Table(box=box.SIMPLE_HEAD, show_lines=False)
+            summary_table.add_column("Verdict", justify="center", width=12)
+            summary_table.add_column("Score", justify="right", width=6)
+            summary_table.add_column("File Path", style="dim")
+            summary_table.add_column("Threat", style="red")
+            summary_table.add_column("Line", style="dim", justify="right", width=6)
 
-            if v == "MALICIOUS":
-                color = "bold red"
-            elif v == "SUSPICIOUS":
-                color = "yellow"
-            else:
-                color = "green"
-            
-            top_threat = "-"
-            if res['unique_findings']:
-                top_finding = max(res['unique_findings'], key=lambda x: x['score'])
-                top_threat = top_finding['category']
+            for res in threat_results:
+                v = res['verdict']
+                
+                if v == "MALICIOUS":
+                    color = "bold red"
+                elif v == "SUSPICIOUS":
+                    color = "yellow"
+                else:
+                    color = "green"
+                
+                top_threat = "-"
+                line_info = "-"
+                
+                if res['unique_findings']:
+                    top_finding = max(res['unique_findings'], key=lambda x: x['score'])
+                    top_threat = top_finding['category']
+                    line_info = str(top_finding['line'])
 
-            summary_table.add_row(
-                f"[{color}]{v}[/{color}]",
-                str(res['risk_score']),
-                res['filepath'],
-                top_threat
-            )
-            
-        console.print(summary_table)
+                # Show path relative to the scanned directory
+                display_path = os.path.relpath(res['filepath'], directory)
 
-        # Final Stats
-        console.print(f"\n[dim]Scanned {total_files} files.[/dim]")
-        if stats["MALICIOUS"] > 0:
-            console.print(f"[bold red]Found {stats['MALICIOUS']} malicious files.[/bold red]")
-        elif stats["SUSPICIOUS"] > 0:
-            console.print(f"[bold yellow]Found {stats['SUSPICIOUS']} suspicious files.[/bold yellow]")
-        else:
-            console.print(f"[bold green]No threats found.[/bold green]")
+                summary_table.add_row(
+                    f"[{color}]{v}[/{color}]",
+                    str(res['risk_score']),
+                    display_path,
+                    top_threat,
+                    line_info
+                )
+                
+            console.print(summary_table)
+
+        # Final Stats Panel
+        summary_text = f"""[bold]Total Files Scanned:[/bold] {total_files}
+[bold green]SAFE Files:[/bold green] {stats.get('SAFE', 0)}
+[bold yellow]SUSPICIOUS Files:[/bold yellow] {stats.get('SUSPICIOUS', 0)}
+[bold red]MALICIOUS Files:[/bold red] {stats.get('MALICIOUS', 0)}
+[bold dim]SKIPPED Files (Unsupported Ext):[/bold dim] {stats.get('SKIPPED', 0)}"""
+
+        console.print(Panel(
+            summary_text,
+            title="[bold]Directory Scan Summary[/bold]",
+            border_style="blue",
+            box=box.ROUNDED
+        ))
         
         return results
 
@@ -424,7 +513,7 @@ class PoCAnalyzer:
         summary = f"""[bold]File:[/bold] {report['filepath']}
 [bold]Verdict:[/bold] [{verdict_color}]{verdict_icon} {verdict}[/{verdict_color}]
 [bold]Risk Score:[/bold] {score}
-[bold]Thresholds:[/bold] SAFE (0-{threshold//2-1}) | SUSPICIOUS ({threshold//2}-{threshold-1}) | MALICIOUS ({threshold}+)"""
+[bold]Thresholds:[/bold] SAFE (0) | SUSPICIOUS (1-{threshold-1}) | MALICIOUS ({threshold}+)"""
         
         console.print(Panel(summary, title="[bold]Analysis Report[/bold]", border_style=verdict_color, box=box.ROUNDED))
         
@@ -469,7 +558,8 @@ class PoCAnalyzer:
                     "xxe": "[XXE]",
                     "persistence": "[PERSISTENCE]",
                     "malware-dropper": "[DROPPER]",
-                    "defense-evasion": "[DEF_EVASION]"
+                    "defense-evasion": "[DEF_EVASION]",
+                    "malicious-domain": "[MALICIOUS_DOMAIN]"
                 }
                 category_display = category_map.get(f['category'], f['category'])
                 
@@ -491,57 +581,10 @@ class PoCAnalyzer:
         else:
             console.print("\n[green][SAFE] No threats detected.[/green]\n")
     
-    def print_directory_summary(self, reports: list[Dict[str, Any]], console: Console = None):
-        """
-        Print a summary for a directory scan.
-        :param reports: A list of all file reports from the directory scan.
-        :param console: Rich Console instance (optional).
-        """
-        if console is None:
-            console = Console()
-
-        total_files = len(reports)
-        malicious_files = 0
-        suspicious_files = 0
-        safe_files = 0
-        skipped_files = 0
-
-        # First, print individual reports for files with risk
-        console.print("\n[bold underline]Detailed File Reports:[/bold underline]\n")
-        has_findings = False
-        for report in reports:
-            if report['verdict'] == "SKIPPED":
-                skipped_files += 1
-            elif report['risk_score'] > 0:
-                self.print_report(report, console)
-                has_findings = True
-                if report['verdict'] == "MALICIOUS":
-                    malicious_files += 1
-                elif report['verdict'] == "SUSPICIOUS":
-                    suspicious_files += 1
-            else:
-                safe_files += 1
-        
-        if not has_findings:
-            console.print("[green][SAFE] No individual threats to report.[/green]\n")
-
-        # Then, print a final directory summary
-        summary = f"""[bold]Total Files Scanned:[/bold] {total_files}
-[bold green]SAFE Files:[/bold green] {safe_files}
-[bold yellow]SUSPICIOUS Files:[/bold yellow] {suspicious_files}
-[bold red]MALICIOUS Files:[/bold red] {malicious_files}
-[bold dim]SKIPPED Files (Unsupported Ext):[/bold dim] {skipped_files}"""
-
-        console.print(Panel(
-            summary,
-            title="[bold]Directory Scan Summary[/bold]",
-            border_style="blue",
-            box=box.ROUNDED
-        ))
-    
     def scan_and_report(self, filepath: str, console: Console = None):
         """
         Convenience method to scan a file and print the report.
+        Uses a spinner animation for better UX.
         
         :param filepath: Path to the file to analyze
         :param console: Rich Console instance (optional)
@@ -549,13 +592,14 @@ class PoCAnalyzer:
         if console is None:
             console = Console()
         
-        console.print(f"\n[cyan][SCAN] Scanning {filepath}...[/cyan]\n")
-        
         try:
             if os.path.isdir(filepath):
                 return self.scan_directory(filepath, console)
             else:
-                report = self.analyze(filepath)
+                report = None
+                with console.status(f"[bold cyan]Scanning {filepath}...[/bold cyan]", spinner="dots"):
+                    report = self.analyze(filepath)
+                
                 self.print_report(report, console)
                 return report
         except Exception as e:

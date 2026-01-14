@@ -3,29 +3,42 @@
 # ==========================================
 
 rules:
-  # Regula 1: Detect dangerous subprocess execution (Medium risk) -> Mark 50 points
-  - id: python-dangerous-subprocess
+  # Regula 1: High risk subprocess (shell=True, os.system) -> High/Error
+  - id: python-dangerous-subprocess-shell
     pattern-either:
-      - pattern: subprocess.call(...)
-      - pattern: subprocess.run(...)
-      - pattern: subprocess.Popen(...)
+      - pattern: subprocess.call(..., shell=True, ...)
+      - pattern: subprocess.run(..., shell=True, ...)
+      - pattern: subprocess.Popen(..., shell=True, ...)
       - pattern: os.system(...)
       - pattern: os.popen(...)
+      # Catch obfuscated assignments
       - patterns:
-          - pattern: $SUB.call(...)
+          - pattern: $SUB.call(..., shell=True, ...)
           - pattern-inside: |
               $SUB = __import__('subprocess')
               ...
-      - patterns:
-          - pattern: $SUB.run(...)
-          - pattern-inside: |
-              $SUB = __import__('subprocess')
-              ...
-    message: "[Python] Warning: Script executes system commands."
+    message: "[Python] Warning: Script executes system commands with shell=True (High Risk)."
     languages: [python]
     severity: WARNING
     metadata:
       risk_score: 60
+      category: rce
+
+  # Regula 1-B: Low/Info risk subprocess (List argument, no shell=True) -> Low
+  - id: python-subprocess-list-args
+    patterns:
+      - pattern-either:
+          - pattern: subprocess.call([...], ...)
+          - pattern: subprocess.run([...], ...)
+          - pattern: subprocess.Popen([...], ...)
+      - pattern-not: subprocess.call(..., shell=True, ...)
+      - pattern-not: subprocess.run(..., shell=True, ...)
+      - pattern-not: subprocess.Popen(..., shell=True, ...)
+    message: "[Python] Info: Script executes external commands (List argument). Verify usage."
+    languages: [python]
+    severity: INFO
+    metadata:
+      risk_score: 10
       category: rce
 
   # Regula 2: Detect reverse shell patterns (Critical) -> Mark 100 points
@@ -82,8 +95,6 @@ rules:
       risk_score: 80
       category: obfuscation
 
-
-
   # Regula 5: Detect sensitive file operations (Medium risk) -> Mark 30 points
   - id: python-sensitive-file-ops
     patterns:
@@ -121,8 +132,6 @@ rules:
       risk_score: 90
       category: backdoor
 
-
-
   # Regula 8: Detect dynamic code loading (Medium risk) -> Mark 20 points
   - id: python-dynamic-import
     pattern-either:
@@ -147,3 +156,24 @@ rules:
     metadata:
       risk_score: 10
       category: network
+
+  # # Regula 10: Detect VulnWatchDog Malware (Critical) -> Mark 100 points
+  # - id: python-malware-vulnwatchdog
+  #   pattern-either:
+  #     # Specific logic for building the GPT prompt with parsed search results
+  #     - patterns:
+  #         - pattern: |
+  #             def build_prompt(cve_info: Dict, search_results: List[Dict], poc_results_str: str) -> str:
+  #                 ...
+  #     # Specific logic for searching GitHub to download PoCs automatically
+  #     - pattern: |
+  #         $QUERY = f"{query}+(poc+OR+exploit)+NOT+test"
+  #     # Specific internal function call combination for the payload
+  #     - pattern: |
+  #         queue_gpt_retry($ID, $PROMPT)
+  #   message: "[Python] Critical: VulnWatchDog malware detected. This tool pretends to be a scanner but facilitates the download of malicious CVE PoCs (backdoors) to the local machine."
+  #   languages: [python]
+  #   severity: ERROR
+  #   metadata:
+  #     risk_score: 100
+  #     category: malware

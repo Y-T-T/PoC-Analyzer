@@ -10,7 +10,7 @@ rules:
     pattern-regex: "(pastebin\\.com|ghostbin\\.com|hastebin\\.com|transfer\\.sh|file\\.io|anonfiles\\.com|gofile\\.io)/[A-Za-z0-9]+"
     message: "[Common] High: Suspicious file sharing URL - common malware dropper."
     languages: [generic]
-    severity: ERROR
+    severity: CRITICAL
     metadata:
       risk_score: 20
       category: network
@@ -66,11 +66,46 @@ rules:
       category: obfuscation
 
   # Regula 16: Detect MSHTA execution with known malicious domains (Critical) -> Mark 100 points
+  # Updates: Uses [\s\S]{0,100} to allow quotes, commas, newlines, and list formats in Python/Node.js
+  # Also detects base64 decoded strings containing mshta or malicious domains
   - id: common-mshta-malicious-domain
-    pattern-regex: "mshta(\\.exe)?\\s+https?://(node[0-9]+-py-store\\.com)"
-    message: "[Common] Critical: Detect 'mshta' downloading payload from known malicious Python store domains."
+    pattern-either:
+      - pattern-regex: "mshta(\\.exe)?[\\s\\S]{0,100}https?://(node[0-9]+-py-store\\.com)"
+    message: "[Common] Critical: Detect 'mshta' or malicious domain."
     languages: [generic]
-    severity: ERROR
+    severity: CRITICAL
     metadata:
       risk_score: 100
-      category: command-execution
+      category: malicious-domain
+  
+  # Regula 17: Detect Hex Obfuscated MSHTA/Malicious Domains (Critical) -> Mark 100 points
+  # Triggers on hex fragments of 'mshta.exe' (6d73687461...) or 'node...-py-store'
+  - id: common-hex-obfuscated-mshta
+    pattern-regex: "(6d7368|7461|2e65|7865|6e6f6465[0-9]2d7079|6d73687461)"
+    message: "[Common] Critical: Detected hex-encoded fragments of 'mshta.exe' or malicious domains."
+    languages: [generic]
+    severity: CRITICAL
+    metadata:
+      risk_score: 100
+      category: malicious-domain
+  
+  - id: common-base64-obfuscated-mshta
+    pattern-either:
+      - pattern-regex: "bXNodGEuZXhl" # base64 for mshta.exe
+      - pattern-regex: "aHR0cHM6Ly9ub2Rl[a-zA-Z0-9]+1weS1zdG9yZS5jb20=" # base64 for https://node...-py-store.com pattern
+    message: "[Common] Critical: Detect base64-encoded fragments of 'mshta' or malicious domain."
+    languages: [generic]
+    severity: CRITICAL
+    metadata:
+      risk_score: 100
+      category: malicious-domain
+
+  # - id: common-blacklist-malicious-domains
+  #   # regex tips: use '|' to separate multiple items, and '\\.' to match strict dots
+  #   pattern-regex: "(node[0-9]+-py-store\\.com|176\\.65\\.132\\.139)"
+  #   message: "[Common] Critical: Known malicious domain or IP detected."
+  #   languages: [generic]
+  #   severity: CRITICAL
+  #   metadata:
+  #     risk_score: 100
+  #     category: malicious-domain

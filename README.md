@@ -125,6 +125,10 @@ By default, the analyzer scans the target file using all rules found in the loca
 python PoC_Analyzer.py poc.py
 ```
 
+> **Tip:** **File Mode vs Directory Mode**
+> - **File Mode (`poc.py`):** Displays detailed risk analysis, including specific Rule IDs and matched code snippets. Use this for deep investigation.
+> - **Directory Mode (`ws/`):** Displays a high-level summary dashboard with progress bars and efficient threat overview.
+
 ### 2. Scan with Specific Configuration
 
 You can specify a custom rule file or a different directory.
@@ -158,8 +162,8 @@ The analyzer assigns a verdict based on the calculated **Risk Score**.
 
 | Verdict | Tag | Condition | Description |
 | --- | --- | --- | --- |
-| **SAFE** | `[SAFE]` | Score < Threshold / 2 | Low risk. Likely a legitimate PoC or tool. |
-| **SUSPICIOUS** | `[SUSPICIOUS]` | Score ≥ Threshold / 2 | Contains some dangerous patterns (e.g., system calls), but lacks definitive malicious intent. Manual review recommended. |
+| **SAFE** | `[SAFE]` | Score = 0 | Clean. No suspicious indicators found. |
+| **SUSPICIOUS** | `[SUSPICIOUS]` | Score > 0 | Contains some potential risk factors (e.g., system calls, network usage). Manual review recommended. |
 | **MALICIOUS** | `[MALICIOUS]` | Score ≥ Threshold | **High Risk.** Clear indicators of backdoor behavior (e.g., Reverse Shell, Obfuscated Execution, Droppers). |
 
 ### Scoring Examples
