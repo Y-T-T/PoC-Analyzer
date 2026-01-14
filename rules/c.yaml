@@ -38,35 +38,7 @@ rules:
       risk_score: 50
       category: rce
 
-  # Regula 3: Detect unsafe string functions (High risk) -> Mark 10 points
-  - id: c-unsafe-string-functions
-    pattern-either:
-      - pattern: strcpy($DST, ...)
-      - pattern: strcat($DST, ...)
-      - pattern: gets(...)
-      - pattern: sprintf($BUF, ...)
-      - pattern: vsprintf($BUF, ...)
-      - pattern: scanf("%s", ...)
-      - pattern: fscanf($FILE, "%s", ...)
-    message: "[C/C++] High: Unsafe string function - potential buffer overflow."
-    languages: [c, cpp]
-    severity: ERROR
-    metadata:
-      risk_score: 10
-      category: memory_corruption
 
-  # Regula 4: Detect dangerous memory operations (Medium risk) -> Mark 20 points
-  - id: c-dangerous-memory-ops
-    pattern-either:
-      - pattern: memcpy($DST, $SRC, $SIZE)
-      - pattern: memmove($DST, $SRC, $SIZE)
-      - pattern: strncpy($DST, $SRC, $SIZE)
-    message: "[C/C++] Warning: Potentially unsafe memory operation."
-    languages: [c, cpp]
-    severity: WARNING
-    metadata:
-      risk_score: 20
-      category: memory_corruption
 
   # Regula 5: Detect reverse shell pattern (Critical) -> Mark 100 points
   - id: c-reverse-shell-pattern
@@ -189,21 +161,7 @@ rules:
       risk_score: 40
       category: code_injection
 
-  # Regula 11: Detect format string vulnerabilities (High risk) -> Mark 30 points
-  - id: c-format-string-vuln
-    patterns:
-      - pattern-either:
-          - pattern: printf($VAR)
-          - pattern: fprintf($FILE, $VAR)
-          - pattern: syslog($PRIO, $VAR)
-      - pattern-not: printf("...")
-      - pattern-not: fprintf($FILE, "...")
-    message: "[C/C++] High: Potential format string vulnerability."
-    languages: [c, cpp]
-    severity: ERROR
-    metadata:
-      risk_score: 30
-      category: memory_corruption
+
 
   # Regula 12: Detect anti-debugging techniques (Medium risk) -> Mark 35 points
   - id: c-anti-debugging

@@ -3,46 +3,9 @@
 # ==========================================
 
 rules:
-  # Regula 1: Detect OS command injection functions (High risk) -> Mark 30 points
-  - id: php-system-exec
-    pattern-either:
-      - pattern: system(...)
-      - pattern: exec(...)
-      - pattern: shell_exec(...)
-      - pattern: passthru(...)
-      - pattern: popen(...)
-      - pattern: proc_open(...)
-    message: "[PHP] Critical: OS Command Injection functions detected."
-    languages: [php]
-    severity: ERROR
-    metadata:
-      risk_score: 30
-      category: rce
 
-  # Regula 2: Detect dynamic code evaluation (Critical) -> Mark 90 points
-  - id: php-dangerous-eval
-    pattern-either:
-      - pattern: eval(...)
-      - pattern: assert(...)
-      - pattern: create_function(...)
-      - patterns:
-          - pattern: eval($VAR)
-          - pattern-either:
-              - pattern-inside: |
-                  $VAR = $_GET[...];
-                  ...
-              - pattern-inside: |
-                  $VAR = $_POST[...];
-                  ...
-              - pattern-inside: |
-                  $VAR = $_REQUEST[...];
-                  ...
-    message: "[PHP] Critical: Dynamic code evaluation detected (often used in Webshells)."
-    languages: [php]
-    severity: ERROR
-    metadata:
-      risk_score: 90
-      category: backdoor
+
+
 
   # Regula 3: Detect Webshell patterns (Critical) -> Mark 100 points
   - id: php-webshell-pattern
@@ -197,23 +160,7 @@ rules:
       risk_score: 25
       category: info_leak
 
-  # Regula 10: Detect database credential patterns (Medium risk) -> Mark 30 points
-  - id: php-hardcoded-db-creds
-    patterns:
-      - pattern-either:
-          - pattern: |
-              $... = mysqli_connect("...", "...", "...", ...)
-          - pattern: |
-              new PDO("...", "...", "...")
-      - metavariable-regex:
-          metavariable: $...
-          regex: ".*(root|admin|password|123456).*"
-    message: "[PHP] Warning: Hardcoded database credentials detected."
-    languages: [php]
-    severity: WARNING
-    metadata:
-      risk_score: 30
-      category: credential_leak
+
 
   # Regula 11: Detect mail function abuse (Low-Medium risk) -> Mark 20 points
   - id: php-mail-abuse

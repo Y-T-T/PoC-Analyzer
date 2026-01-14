@@ -102,51 +102,7 @@ rules:
       risk_score: 40
       category: code_injection
 
-  # Regula 8: Detect XXE vulnerabilities (High risk) -> Mark 80 points
-  - id: java-xxe-vulnerability
-    patterns:
-      - pattern-either:
-          - patterns:
-              - pattern: DocumentBuilderFactory.newInstance()
-              - pattern-not-inside: |
-                  $DBF.setFeature("...", true);
-                  ...
-          - patterns:
-              - pattern: SAXParserFactory.newInstance()
-              - pattern-not-inside: |
-                  $SPF.setFeature("...", true);
-                  ...
-          - pattern: new XMLReader()
-    message: "[Java] High: XML External Entity (XXE) vulnerability - parser not configured securely."
-    languages: [java]
-    severity: ERROR
-    metadata:
-      risk_score: 80
-      category: xxe
 
-  # Regula 9: Detect SQL injection (High risk) -> Mark 70 points
-  - id: java-sql-injection
-    patterns:
-      - pattern-either:
-          - pattern: $STMT.executeQuery($SQL)
-          - pattern: $STMT.execute($SQL)
-          - pattern: $STMT.executeUpdate($SQL)
-      - pattern-either:
-          - pattern-inside: |
-              $SQL = "..." + $VAR + ...;
-              ...
-          - pattern-inside: |
-              $SQL = ... + $VAR + ...;
-              ...
-          - pattern-inside: |
-              ... $SQL = "..." + ...;
-              ...
-    message: "[Java] High: SQL injection - use PreparedStatement instead of string concatenation."
-    languages: [java]
-    severity: ERROR
-    metadata:
-      risk_score: 70
-      category: sql_injection
 
   # Regula 10: Detect script engine execution (High risk) -> Mark 85 points
   - id: java-script-engine
@@ -165,20 +121,7 @@ rules:
       risk_score: 85
       category: code_injection
 
-  # Regula 11: Detect file operations with user input (Medium risk) -> Mark 50 points
-  - id: java-file-operations
-    pattern-either:
-      - pattern: new File($PATH)
-      - pattern: new FileInputStream($PATH)
-      - pattern: new FileOutputStream($PATH)
-      - pattern: Files.write($PATH, ...)
-      - pattern: Files.readAllBytes($PATH)
-    message: "[Java] Warning: File operation - ensure path is validated to prevent path traversal."
-    languages: [java]
-    severity: WARNING
-    metadata:
-      risk_score: 50
-      category: file_manipulation
+
 
   # Regula 12: Detect network connections (Low-Medium risk) -> Mark 30 points
   - id: java-network-connection
@@ -194,39 +137,7 @@ rules:
       risk_score: 30
       category: network
 
-  # Regula 13: Detect hardcoded credentials (Medium risk) -> Mark 35 points
-  - id: java-hardcoded-credentials
-    patterns:
-      - pattern-either:
-          - pattern: |
-              $VAR = "...";
-          - pattern: |
-              final $TYPE $VAR = "...";
-      - metavariable-regex:
-          metavariable: $VAR
-          regex: ".*(password|passwd|pwd|secret|token|apikey|api_key|apiKey).*"
-    message: "[Java] Warning: Potential hardcoded credentials detected."
-    languages: [java]
-    severity: WARNING
-    metadata:
-      risk_score: 35
-      category: credential_leak
 
-  # Regula 14: Detect weak cryptography (Medium risk) -> Mark 45 points
-  - id: java-weak-crypto
-    pattern-either:
-      - pattern: MessageDigest.getInstance("MD5")
-      - pattern: MessageDigest.getInstance("SHA1")
-      - pattern: MessageDigest.getInstance("SHA-1")
-      - pattern: Cipher.getInstance("DES")
-      - pattern: Cipher.getInstance("DES/...")
-      - pattern: SecureRandom.getInstance("SHA1PRNG")
-    message: "[Java] Warning: Weak cryptographic algorithm usage."
-    languages: [java]
-    severity: WARNING
-    metadata:
-      risk_score: 45
-      category: weak_crypto
 
   # Regula 15: Detect Spring Expression Language injection (Critical) -> Mark 90 points
   - id: java-spel-injection

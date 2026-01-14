@@ -82,20 +82,7 @@ rules:
       risk_score: 80
       category: obfuscation
 
-  # Regula 4: Detect dangerous deserialization (High risk) -> Mark 70 points
-  - id: python-unsafe-deserialization
-    pattern-either:
-      - pattern: pickle.loads(...)
-      - pattern: pickle.load($FILE)
-      - pattern: yaml.load(..., Loader=yaml.Loader)
-      - pattern: eval(...)
-      - pattern: exec(...)
-    message: "[Python] High: Unsafe deserialization or code execution detected."
-    languages: [python]
-    severity: ERROR
-    metadata:
-      risk_score: 70
-      category: deserialization
+
 
   # Regula 5: Detect sensitive file operations (Medium risk) -> Mark 30 points
   - id: python-sensitive-file-ops
@@ -134,26 +121,7 @@ rules:
       risk_score: 90
       category: backdoor
 
-  # Regula 7: Detect hardcoded credentials (Medium risk) -> Mark 30 points
-  - id: python-hardcoded-credentials
-    pattern-either:
-      - patterns:
-          - pattern: $VAR = "..."
-          - metavariable-regex:
-              metavariable: $VAR
-              regex: ".*(password|passwd|pwd|secret|token|api_key|apikey|access_key).*"
-      - pattern: |
-          $DICT = {..., "password": "...", ...}
-      - pattern: |
-          $DICT = {..., "token": "...", ...}
-      - pattern: |
-          $DICT = {..., "api_key": "...", ...}
-    message: "[Python] Warning: Potential hardcoded credentials detected."
-    languages: [python]
-    severity: WARNING
-    metadata:
-      risk_score: 30
-      category: credential_leak
+
 
   # Regula 8: Detect dynamic code loading (Medium risk) -> Mark 20 points
   - id: python-dynamic-import

@@ -137,22 +137,3 @@ rules:
       risk_score: 90
       category: backdoor
 
-  # Regula 6: Detect hardcoded credentials (Medium risk) -> Mark 30 points
-  - id: js-hardcoded-credentials
-    pattern-either:
-      - pattern: |
-          $VAR = {password: "...", ...}
-      - pattern: |
-          $VAR = {apiKey: "...", ...}
-      - pattern: |
-          $VAR = {token: "...", ...}
-      - pattern: |
-          const $PASSWORD = "..."
-          ...
-          $AUTH(..., $PASSWORD, ...)
-    message: "[JS] Warning: Potential hardcoded credentials detected."
-    languages: [javascript, typescript]
-    severity: WARNING
-    metadata:
-      risk_score: 30
-      category: credential_leak
