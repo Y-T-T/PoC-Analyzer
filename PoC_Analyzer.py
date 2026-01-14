@@ -8,8 +8,36 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich import box
+import concurrent.futures
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeRemainingColumn, MofNCompleteColumn
+import queue
+import threading
 
 console = Console()
+
+class ConditionalBarColumn(BarColumn):
+    def render(self, task):
+        if task.fields.get("type") == "worker":
+            return ""
+        return super().render(task)
+
+class ConditionalTextColumn(TextColumn):
+    def render(self, task):
+        if task.fields.get("type") == "worker":
+            return "" 
+        return super().render(task)
+
+class ConditionalTimeColumn(TimeRemainingColumn):
+    def render(self, task):
+        if task.fields.get("type") == "worker":
+            return "" 
+        return super().render(task)
+
+class ConditionalMofNColumn(MofNCompleteColumn):
+    def render(self, task):
+        if task.fields.get("type") == "worker":
+            return "" 
+        return super().render(task)
 
 class PoCAnalyzer:
     """
@@ -105,6 +133,7 @@ class PoCAnalyzer:
             *config_args,
             "--json",
             "--quiet", # Suppress progress bars
+            "--jobs", "1",
             filepath
         ]
 
@@ -220,66 +249,149 @@ class PoCAnalyzer:
             "unique_findings": analysis["unique_findings"]
         }
     
-    def scan_directory(self, directory: str, console: Console = None):
-        """Recursively scan a directory."""
+    def scan_directory(self, directory: str, console: Console = None, max_workers: int = 8):
+        """
+        Scan directory using a Dashboard UI (Total Bar + Minimalist Worker Lines).
+        """
         if console is None: console = Console()
         
-        console.print(f"\n[bold cyan][DIRECTORY] Scanning Directory: {directory}[/bold cyan]\n")
+        console.print(f"\n[bold cyan][DIRECTORY] Scanning Directory: {directory}[/bold cyan]")
         
+        # 1. Prepare File List
+        files_to_scan = []
+        for root, _, files in os.walk(directory):
+            for file in files:
+                _, ext = os.path.splitext(file)
+                if ext.lower() in self.valid_extensions:
+                    files_to_scan.append(os.path.join(root, file))
+
+        total_files = len(files_to_scan)
+        if total_files == 0:
+            console.print("[yellow]No supported files found in directory.[/yellow]")
+            return []
+
+        num_workers = min(max_workers, total_files)
+        file_queue = queue.Queue()
+        for f in files_to_scan:
+            file_queue.put(f)
+
+        console.print(f"[dim]Found {total_files} files. Starting {num_workers} worker threads.[/dim]\n")
+
         stats = {"MALICIOUS": 0, "SUSPICIOUS": 0, "SAFE": 0, "SKIPPED": 0}
         results = []
+        stats_lock = threading.Lock()
 
-        # Use a status spinner to show progress
-        with console.status("[bold green]Scanning files...[/bold green]") as status:
-            for root, _, files in os.walk(directory):
-                for file in files:
-                    _, ext = os.path.splitext(file)
-                    if ext.lower() in self.valid_extensions:
-                        filepath = os.path.join(root, file)
-                        status.update(f"[bold green]Scanning: {file}[/bold green]")
-                        
-                        # Analyze each file
-                        report = self.analyze(filepath)
-                        verdict = report.get('verdict', 'SKIPPED')
-                        stats[verdict] = stats.get(verdict, 0) + 1
-                        
-                        # Store for summary                        
-                        self.print_report(report, console)
-                        results.append(report)
-
-        # Print Summary Table at the end
-        if results:
-            console.print("\n[bold][SUMMARY] Directory Scan Summary[/bold]")
-            summary_table = Table(box=box.SIMPLE_HEAD)
-            summary_table.add_column("File", style="cyan")
-            summary_table.add_column("Verdict", justify="center")
-            summary_table.add_column("Score", justify="right")
+        # 2. Setup Progress Dashboard
+        progress = Progress(
+            SpinnerColumn(),
+            # This is the only column everyone will see: text description
+            TextColumn("{task.description}"), 
             
-            for res in results:
-                v = res['verdict']
-                if v == "MALICIOUS":
-                    color = "red"
-                elif v == "SUSPICIOUS":
-                    color = "yellow"
-                else:
-                    color = "green"
-                summary_table.add_row(
-                    res['filepath'],
-                    f"[{color}]{v}[/{color}]",
-                    str(res['risk_score'])
-                )
-            console.print(summary_table)
+            # The following columns are only shown for the Total task; Workers will leave these blank
+            ConditionalBarColumn(bar_width=None),
+            ConditionalTextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            ConditionalMofNColumn(),
+            ConditionalTimeColumn(),
+            
+            console=console,
+            transient=False
+        )
 
-        # Final Statistics
-        total = sum(stats.values())
-        console.print(f"\n[dim]Scanned {total} files.[/dim]")
-        
+        with progress:
+            # (A) Create Total Progress Bar (no type="worker", so Bar is shown)
+            main_task_id = progress.add_task("[bold green]Total Progress", total=total_files)
+            
+            # (B) Create Worker Status Lines (type="worker" to hide Bar)
+            worker_tasks = []
+            for i in range(num_workers):
+                # Initial text set to Idle
+                tid = progress.add_task(f"[dim]Worker {i+1}: Idle[/dim]", total=None, type="worker")
+                worker_tasks.append(tid)
+
+            # 3. Worker Logic
+            def worker_logic(worker_idx, task_id):
+                while True:
+                    try:
+                        filepath = file_queue.get_nowait()
+                    except queue.Empty:
+                        # No more work, hide or dim the line
+                        progress.update(task_id, description=f"[dim]Worker {worker_idx+1}: Done[/dim]", visible=False)
+                        break
+
+                    # [UI Update] Only update text description, e.g., "Worker 1: Scanning bad.py..."
+                    fname = os.path.basename(filepath)
+                    if len(fname) > 30: fname = fname[:27] + "..."
+                    
+                    progress.update(task_id, description=f"[cyan]Worker {worker_idx+1}:[/cyan] Scanning {fname}")
+
+                    try:
+                        report = self.analyze(filepath)
+                        
+                        with stats_lock:
+                            results.append(report)
+                            verdict = report.get('verdict', 'SKIPPED')
+                            stats[verdict] = stats.get(verdict, 0) + 1
+                            
+                            # Display alerts when threats are found
+                            if verdict == "MALICIOUS":
+                                progress.console.print(f"[bold red]!! DETECTED:[/bold red] {fname} (Score: {report['risk_score']})")
+                            elif verdict == "SUSPICIOUS":
+                                progress.console.print(f"[yellow]?! SUSPICIOUS:[/yellow] {fname}")
+
+                    except Exception as e:
+                        progress.console.print(f"[red]Error {fname}: {e}[/red]")
+                    finally:
+                        # Completed a file, advance total progress
+                        progress.advance(main_task_id)
+                        file_queue.task_done()
+
+            # 4. Start Worker Threads
+            with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+                futures = [executor.submit(worker_logic, i, worker_tasks[i]) for i in range(num_workers)]
+                concurrent.futures.wait(futures)
+
+        # 5. Summary
+        results.sort(key=lambda x: x['risk_score'], reverse=True)
+        console.print("\n[bold][SUMMARY] Scan Results[/bold]")
+        summary_table = Table(box=box.SIMPLE_HEAD, show_lines=False)
+        summary_table.add_column("Verdict", justify="center", width=12)
+        summary_table.add_column("Score", justify="right", width=6)
+        summary_table.add_column("File Path", style="dim")
+        summary_table.add_column("Threat", style="red")
+
+        for res in results:
+            v = res['verdict']
+            if v == "SAFE": continue 
+
+            if v == "MALICIOUS":
+                color = "bold red"
+            elif v == "SUSPICIOUS":
+                color = "yellow"
+            else:
+                color = "green"
+            
+            top_threat = "-"
+            if res['unique_findings']:
+                top_finding = max(res['unique_findings'], key=lambda x: x['score'])
+                top_threat = top_finding['category']
+
+            summary_table.add_row(
+                f"[{color}]{v}[/{color}]",
+                str(res['risk_score']),
+                res['filepath'],
+                top_threat
+            )
+            
+        console.print(summary_table)
+
+        # Final Stats
+        console.print(f"\n[dim]Scanned {total_files} files.[/dim]")
         if stats["MALICIOUS"] > 0:
-            console.print(f"[bold red][MALICIOUS] Directory Scan Complete: Found {stats['MALICIOUS']} malicious files![/bold red]")
+            console.print(f"[bold red]Found {stats['MALICIOUS']} malicious files.[/bold red]")
         elif stats["SUSPICIOUS"] > 0:
-            console.print(f"[bold yellow][WARNING] Directory Scan Complete: Found {stats['SUSPICIOUS']} suspicious files.[/bold yellow]")
+            console.print(f"[bold yellow]Found {stats['SUSPICIOUS']} suspicious files.[/bold yellow]")
         else:
-            console.print(f"[bold green][SAFE] Directory Scan Complete: No threats found.[/bold green]")
+            console.print(f"[bold green]No threats found.[/bold green]")
         
         return results
 
