@@ -182,11 +182,11 @@ python PoC_Analyzer.py -m 1000 poc.py
 
 The analyzer assigns a verdict based on the calculated **Risk Score**.
 
-| Verdict | Tag | Condition | Description |
-| --- | --- | --- | --- |
-| **SAFE** | `[SAFE]` | Score = 0 | Clean. No suspicious indicators found. |
-| **SUSPICIOUS** | `[SUSPICIOUS]` | Score > 0 | Contains some potential risk factors (e.g., system calls, network usage). Manual review recommended. |
-| **MALICIOUS** | `[MALICIOUS]` | Score ≥ Threshold | **High Risk.** Clear indicators of backdoor behavior (e.g., Reverse Shell, Obfuscated Execution, Droppers). |
+| Verdict |  Condition | Description |
+| --- | --- | --- |
+| **SAFE** | Score = 0 | Clean. No suspicious indicators found. |
+| **SUSPICIOUS** | Score > 0 | Contains some potential risk factors (e.g., system calls, network usage). Manual review recommended. |
+| **MALICIOUS** | Score ≥ Threshold | **High Risk.** Clear indicators of backdoor behavior (e.g., Reverse Shell, Obfuscated Execution, Droppers). |
 
 ### Scoring Examples
 
