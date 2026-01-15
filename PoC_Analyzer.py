@@ -12,8 +12,48 @@ import concurrent.futures
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeRemainingColumn, MofNCompleteColumn
 import queue
 import threading
+from update_blacklist import update_blacklist_file
 
 console = Console()
+
+# Category display mapping and High-Level Grouping
+CATEGORY_MAP = {
+    # 1. Backdoor / C2
+    "backdoor": "BACKDOOR",
+    "malicious-domain": "MALICIOUS_DOMAIN",
+    "persistence": "PERSISTENCE",
+    
+    # 2. Execution / Payload
+    "malware-dropper": "DROPPER",
+    "indirect-execution": "INDIRECT_EXECUTION",
+    "code_injection": "CODE_INJECTION",
+    "deserialization": "DESERIALIZATION",
+    
+    # 3. Impact / Damage
+    "destruction": "DESTRUCTION",
+    "credential_leak": "CREDENTIALS",
+    "abuse": "ABUSE", # Spam, Crypto-mining
+    
+    # 4. Evasion / Misc
+    "obfuscation": "OBFUSCATION",
+    "defense-evasion": "DEF_EVASION",
+    "evasion": "EVASION",
+    "file_manipulation": "FILE_OPS",
+    "network": "NETWORK",
+    "privilege_escalation": "PRIV_ESC"
+}
+
+# High-Level Categories for Executive Summary
+THREAT_GROUPS = {
+    "Execution Control": ["code_injection", "indirect-execution", "deserialization", "privilege_escalation"],
+    "Persistence Access": ["backdoor", "persistence"],
+    "Delivery Infection": ["malware-dropper"],
+    "Defense Evasion": ["obfuscation", "defense-evasion", "evasion"],
+    "File System Ops": ["file_manipulation", "destruction"],
+    "Network Communication": ["network", "malicious-domain"],
+    "Information Risk": ["credential_leak"],
+    "Abuse Behavior": ["abuse"],
+}
 
 class ConditionalBarColumn(BarColumn):
     def render(self, task):
@@ -315,12 +355,24 @@ class PoCAnalyzer:
             "unique_findings": unique_findings
         }
     
-    def scan_directory(self, directory: str, console: Console = None, max_workers: int = 8):
+    def scan_directory(self, directory: str, console: Console = None, max_workers: int = 4) -> list[Dict[str, Any]]:
         """
         Scan directory using a Dashboard UI (Total Bar + Minimalist Worker Lines).
         """
         if console is None: console = Console()
         
+        # Safety Check: Cap workers at CPU count to prevent freezing
+        # Each worker spawns a semgrep subprocess which is CPU-intensive
+        try:
+            sys_cores = os.cpu_count() or 4
+        except Exception:
+            sys_cores = 4
+
+        if max_workers > sys_cores:
+            console.print(f"[yellow][!] Limiting workers to {sys_cores} (System Cores) to prevent CPU saturation.[/yellow]")
+            console.print(f"[dim]    (Requested: {max_workers}, Available Cores: {sys_cores})[/dim]")
+            max_workers = sys_cores
+
         console.print(f"\n[bold cyan][DIRECTORY] Scanning Directory: {directory}[/bold cyan]")
         
         # 1. Prepare File List
@@ -420,25 +472,26 @@ class PoCAnalyzer:
                 concurrent.futures.wait(futures)
 
         # 5. Summary
+        self.print_directory_summary(results, stats, total_files, directory, console)
+        
+        return results
+
+    def print_directory_summary(self, results: list, stats: dict, total_files: int, directory: str, console: Console):
+        """
+        Print the summary dashboard for a directory scan.
+        """
         results.sort(key=lambda x: x['risk_score'], reverse=True)
         
         # Show all files with score > 0, even if SAFE
         threat_results = [r for r in results if r['risk_score'] > 0]
 
-        # Detailed Threat Analysis
-        # if threat_results:
-        #     console.print("\n[bold underline]Detailed Threat Analysis:[/bold underline]")
-        #     for res in threat_results:
-        #         self.print_report(res, console)
-        
         if threat_results:
-            console.print("\n[bold][SUMMARY] Scan Results[/bold]")
-            summary_table = Table(box=box.SIMPLE_HEAD, show_lines=False)
-            summary_table.add_column("Verdict", justify="center", width=12)
-            summary_table.add_column("Score", justify="right", width=6)
-            summary_table.add_column("File Path", style="dim")
-            summary_table.add_column("Threat", style="red")
-            summary_table.add_column("Line", style="dim", justify="right", width=6)
+            summary_table = Table(box=box.SIMPLE_HEAD, show_lines=False, expand=True)
+            summary_table.add_column("Verdict", justify="center", no_wrap=True)
+            summary_table.add_column("Score", justify="center", no_wrap=True)
+            summary_table.add_column("File Path", style="dim", ratio=1)
+            summary_table.add_column("Threat", style="red", no_wrap=True)
+            summary_table.add_column("Line", style="dim", justify="center", no_wrap=True)
 
             for res in threat_results:
                 v = res['verdict']
@@ -455,7 +508,7 @@ class PoCAnalyzer:
                 
                 if res['unique_findings']:
                     top_finding = max(res['unique_findings'], key=lambda x: x['score'])
-                    top_threat = top_finding['category']
+                    top_threat = CATEGORY_MAP.get(top_finding['category'], top_finding['category'])
                     line_info = str(top_finding['line'])
 
                 # Show path relative to the scanned directory
@@ -468,8 +521,13 @@ class PoCAnalyzer:
                     top_threat,
                     line_info
                 )
-                
-            console.print(summary_table)
+            
+            console.print(Panel(
+                summary_table,
+                title="[bold]Suspicious & Malicious Files[/bold]",
+                border_style="red",
+                box=box.ROUNDED
+            ))
 
         # Final Stats Panel
         summary_text = f"""[bold]Total Files Scanned:[/bold] {total_files}
@@ -484,12 +542,47 @@ class PoCAnalyzer:
             border_style="blue",
             box=box.ROUNDED
         ))
-        
-        return results
 
-    def print_report(self, report: Dict[str, Any], console: Console = None):
+        # Threat Group Summary
+        # Flatten all unique categories found across all malicious/suspicious files
+        detected_categories = set()
+        for res in threat_results:
+            for finding in res.get('unique_findings', []):
+                detected_categories.add(finding['category'])
+        
+        if detected_categories:
+            # Create a table for groups
+            group_table = Table(box=box.SIMPLE, show_header=True, expand=True)
+            group_table.add_column("Threat Group", style="bold", no_wrap=True)
+            group_table.add_column("Status", justify="center", no_wrap=True)
+            group_table.add_column("Detected Types", style="dim", ratio=1)
+
+            for group_name, subtypes in THREAT_GROUPS.items():
+                # Check intersection between this group's subtypes and what we found
+                found_in_group = detected_categories.intersection(set(subtypes))
+                
+                if found_in_group:
+                    status = "[red]DETECTED[/red]"
+                    # Convert raw category to display name if possible, or keep raw
+                    display_types = ", ".join([CATEGORY_MAP.get(c, c).replace('[', '').replace(']', '') for c in found_in_group])
+                else:
+                    status = "[green]CLEAN[/green]"
+                    display_types = "-"
+                
+                group_table.add_row(group_name, status, display_types)
+            
+            console.print(Panel(
+                group_table,
+                title="[bold]PoC Scan Result Summary[/bold]",
+                border_style="cyan",
+                box=box.ROUNDED
+            ))
+
+        console.print("\n[dim]Tip: For detailed analysis, run the scanner on a specific file directly.[/dim]\n")
+
+    def print_single_file_report(self, report: Dict[str, Any], console: Console = None):
         """
-        Print a formatted analysis report using Rich.
+        Print a formatted analysis report for a single file using Rich.
         
         :param report: The report dictionary from analyze()
         :param console: Rich Console instance (optional)
@@ -521,10 +614,8 @@ class PoCAnalyzer:
         console.print(Panel(summary, title="[bold]Analysis Report[/bold]", border_style=verdict_color, box=box.ROUNDED))
         
         if report['findings']:
-            console.print(f"\n[bold yellow][!] Risk Indicators Detected:[/bold yellow]\n")
-            
             # Create findings table
-            table = Table(show_header=True, header_style="bold magenta", box=box.SIMPLE)
+            table = Table(show_header=True, header_style="bold magenta", box=box.SIMPLE, expand=True)
             table.add_column("Line", style="cyan", width=6)
             table.add_column("Category", style="blue", width=18)
             table.add_column("Score", justify="right", width=6)
@@ -541,30 +632,7 @@ class PoCAnalyzer:
                     score_color = "green"
                 
                 # Category tag mapping
-                category_map = {
-                    "backdoor": "[BACKDOOR]",
-                    "indirect-execution": "[INDIRECT_EXECUTION]",
-                    "obfuscation": "[OBFUSCATION]",
-                    "file_manipulation": "[FILE_OPS]",
-                    "credential_leak": "[CREDENTIALS]",
-                    "deserialization": "[DESERIALIZATION]",
-                    "code_injection": "[CODE_INJECTION]",
-                    "network": "[NETWORK]",
-                    "info_leak": "[INFO_LEAK]",
-                    "abuse": "[ABUSE]",
-                    "destruction": "[DESTRUCTION]",
-                    "memory_corruption": "[MEMORY]",
-                    "privilege_escalation": "[PRIV_ESC]",
-                    "evasion": "[EVASION]",
-                    "weak_crypto": "[WEAK_CRYPTO]",
-                    "sql_injection": "[SQL_INJECTION]",
-                    "xxe": "[XXE]",
-                    "persistence": "[PERSISTENCE]",
-                    "malware-dropper": "[DROPPER]",
-                    "defense-evasion": "[DEF_EVASION]",
-                    "malicious-domain": "[MALICIOUS_DOMAIN]"
-                }
-                category_display = category_map.get(f['category'], f['category'])
+                category_display = CATEGORY_MAP.get(f['category'], f['category'])
                 
                 table.add_row(
                     str(f['line']),
@@ -574,7 +642,12 @@ class PoCAnalyzer:
                     f['message'].replace('[JS] ', '').replace('[Python] ', '').replace('[PHP] ', '')
                 )
             
-            console.print(table)
+            console.print(Panel(
+                table,
+                title="[bold yellow]Detailed Threat Analysis[/bold yellow]",
+                border_style="yellow",
+                box=box.ROUNDED
+            ))
             
             # Scoring info
             unique_count = len(report.get('unique_findings', []))
@@ -584,26 +657,27 @@ class PoCAnalyzer:
         else:
             console.print("\n[green][SAFE] No threats detected.[/green]\n")
     
-    def scan_and_report(self, filepath: str, console: Console = None):
+    def scan_and_report(self, filepath: str, console: Console = None, max_workers: int = 8):
         """
         Convenience method to scan a file and print the report.
         Uses a spinner animation for better UX.
         
         :param filepath: Path to the file to analyze
         :param console: Rich Console instance (optional)
+        :param max_workers: Number of worker threads for directory scanning
         """
         if console is None:
             console = Console()
         
         try:
             if os.path.isdir(filepath):
-                return self.scan_directory(filepath, console)
+                return self.scan_directory(filepath, console, max_workers=max_workers)
             else:
                 report = None
                 with console.status(f"[bold cyan]Scanning {filepath}...[/bold cyan]", spinner="dots"):
                     report = self.analyze(filepath)
                 
-                self.print_report(report, console)
+                self.print_single_file_report(report, console)
                 return report
         except Exception as e:
             console.print(f"[bold red][ERROR] Scan failed: {e}[/bold red]")
@@ -618,6 +692,9 @@ def parse_arguments():
 Examples:
   python PoC_Analyzer.py test_PoC/malicious_test.js
   python PoC_Analyzer.py -c python.yaml -t 120 test_PoC/malicious_test.py
+  python PoC_Analyzer.py --all-rules test_PoC/malicious_test.php
+  python PoC_Analyzer.py -w 4 test_PoC/
+  python PoC_Analyzer.py -m 1000 test_PoC/malicious_test.py
         """
     )
     
@@ -644,6 +721,27 @@ Examples:
         action='store_true',
         help='Force scan with ALL rules (ignore extension mapping). Useful for deep inspection.'
     )
+
+    parser.add_argument(
+        '-w', '--workers',
+        type=int,
+        default=4,
+        help='Number of worker threads for directory scanning (default: 4)'
+    )
+
+    parser.add_argument(
+        '-m', '--max-entries',
+        type=int,
+        default=500,
+        help='Maximum number of entries to fetch for blacklist update (default: 500)'
+    )
+
+    parser.add_argument(
+        '-v', '--version',
+        action='version',
+        version='PoC Analyzer 1.0.0',
+        help='Show program version and exit'
+    )
     
     return parser.parse_args()
 
@@ -655,6 +753,9 @@ if __name__ == "__main__":
     if not os.path.exists(args.filepath):
         console.print(f"[bold red][ERROR] Error: File '{args.filepath}' not found.[/bold red]")
         exit(1)
+    
+    # Update blacklist before scanning
+    update_blacklist_file(max_entries=args.max_entries)
     
     config_path = args.config if args.config else "rules/"
 
@@ -668,6 +769,6 @@ if __name__ == "__main__":
 
     # Scan and print report
     try:
-        engine.scan_and_report(args.filepath, console)
+        engine.scan_and_report(args.filepath, console, max_workers=args.workers)
     except Exception:
         exit(1)

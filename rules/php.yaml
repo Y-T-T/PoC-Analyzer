@@ -146,22 +146,6 @@ rules:
       risk_score: 95
       category: backdoor
 
-  # Regula 9: Detect information disclosure (Low-Medium risk) -> Mark 25 points
-  - id: php-info-disclosure
-    pattern-either:
-      - pattern: phpinfo()
-      - pattern: var_dump($_SERVER)
-      - pattern: print_r($_SERVER)
-      - pattern: var_export($_ENV)
-    message: "[PHP] Warning: Information disclosure function detected."
-    languages: [php]
-    severity: WARNING
-    metadata:
-      risk_score: 25
-      category: info_leak
-
-
-
   # Regula 11: Detect mail function abuse (Low-Medium risk) -> Mark 20 points
   - id: php-mail-abuse
     patterns:

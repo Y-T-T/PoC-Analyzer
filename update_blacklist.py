@@ -24,7 +24,7 @@ TRUSTED_DOMAINS = {
 MARKER_START = "# ================== AUTO-GENERATED URLHAUS START =================="
 MARKER_END = "# ================== AUTO-GENERATED URLHAUS END =================="
 
-def get_urlhaus_data():
+def _get_urlhaus_data(max_entries: int = MAX_ENTRIES) -> list[str]:
     """Download and parse URLHaus CSV"""
     print(f"[*] Downloading blacklist from {URLHAUS_CSV_URL}...")
     try:
@@ -71,7 +71,7 @@ def get_urlhaus_data():
                 except Exception:
                     continue
 
-                if len(urls) >= MAX_ENTRIES:
+                if len(urls) >= max_entries:
                     break
         
         print(f"[*] Fetched {len(urls)} unique malicious IPs/Domains/URLs.")
@@ -81,8 +81,14 @@ def get_urlhaus_data():
         print(f"[!] Error fetching data: {e}")
         return []
 
-def update_blacklist_file(new_urls):
+def update_blacklist_file(new_urls: list[str]=None, max_entries: int = MAX_ENTRIES) -> None:
     """Update blacklist file, preserving user manually input content"""
+    if new_urls is None:
+        new_urls = _get_urlhaus_data()
+    if not new_urls:
+        print("[!] No new URLs to update.")
+        return
+
     if not os.path.exists(BLACKLIST_FILE):
         print(f"[!] Error: {BLACKLIST_FILE} not found.")
         return
@@ -111,9 +117,7 @@ def update_blacklist_file(new_urls):
     with open(BLACKLIST_FILE, 'w') as f:
         f.write(new_content)
     
-    print(f"[+] Successfully updated {BLACKLIST_FILE}")
+    print(f"[+] Successfully updated {BLACKLIST_FILE}\n")
 
 if __name__ == "__main__":
-    urls = get_urlhaus_data()
-    if urls:
-        update_blacklist_file(urls)
+    update_blacklist_file()

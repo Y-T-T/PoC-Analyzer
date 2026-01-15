@@ -163,7 +163,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 70
-      category: info_leak
+      category: credential_leak
 
   # Regula 13: Detect eval obfuscation (Medium-High risk) -> Mark 65 points
   - id: bash-eval-obfuscation
