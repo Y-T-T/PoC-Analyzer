@@ -11,6 +11,7 @@ Unlike traditional SAST tools that search for *vulnerabilities* in code, PoC Ana
 * **Multi-Language Support**: Native support for **Python, Node.js, Go, PHP, Java, C/C++, Shell, Batch, and PowerShell**.
 * **Heuristic Scoring Engine**: Calculates a "Risk Score" based on weighted behaviors (e.g., Obfuscation = High Risk, Socket Connection = Low Risk) rather than simple keyword matching.
 * **AST-Based Analysis**: Powered by [Semgrep](https://semgrep.dev/), allowing it to understand code structure and detect obfuscated patterns (e.g., `eval(base64...)`) that regex often misses.
+* **Live Threat Intelligence**: Automatically updates malicious domains/IPs blacklist from [URLHaus](https://urlhaus.abuse.ch/) before every scan, ensuring detection of the latest C2 infrastructure.
 * **Smart Deduplication**: Automatically groups duplicate findings to prevent score inflation, ensuring accurate risk assessment.
 * **Rich Reporting**: Generates beautiful, easy-to-read terminal reports with clear verdicts (SAFE / SUSPICIOUS / MALICIOUS).
 
@@ -157,6 +158,24 @@ By default, the analyzer only uses rules relevant to the file's extension (e.g.,
 python PoC_Analyzer.py --all-rules poc.js
 ```
 
+### 5. Performance Tuning (Multi-threading)
+
+For scanning large directories, you can increase the number of worker threads. The tool automatically caps this at your system's CPU core count to prevent freezing.
+
+```bash
+# Use 8 threads to scan a large project
+python PoC_Analyzer.py -w 8 test_PoC/malicious_proj/
+```
+
+### 6. Blacklist Update Configuration
+
+The tool automatically fetches the latest malicious URLs from URLHaus. You can control how many recent entries to fetch (default: 500) to balance startup speed and coverage.
+
+```bash
+# Fetch top 1000 malicious domains for better coverage
+python PoC_Analyzer.py -m 1000 poc.py
+```
+
 ---
 
 ## Risk Scoring Logic
@@ -171,12 +190,12 @@ The analyzer assigns a verdict based on the calculated **Risk Score**.
 
 ### Scoring Examples
 
-* **Socket Connection (`socket`)**: +10 (Essential for many PoCs)
-* **System Command (`os.system`)**: +30 (Common in RCE PoCs)
-* **Obfuscation (`base64 decode`)**: +80 (High Risk)
+* **Socket Connection (`socket`)**: +10 (info/network)
+* **System Command (`os.system`)**: +60 (High Risk - Direct shell execution)
+* **Obfuscation (`base64 decode`)**: +80 (High Risk - Common evasion)
 * **Reverse Shell Pattern**: **+100 (Critical Malicious Indicator)**
 
-*Example:* A script containing `eval(base64...)` (+80) and a system command (+30) would score **110**. With a threshold of 100, this would be flagged as **MALICIOUS**.
+*Example:* A script containing `eval(base64...)` (+80) and a system command (+60) would score **140**. With a threshold of 100, this would be flagged as **MALICIOUS**.
 
 ---
 

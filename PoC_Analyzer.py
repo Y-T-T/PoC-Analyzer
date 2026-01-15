@@ -18,29 +18,37 @@ console = Console()
 
 # Category display mapping and High-Level Grouping
 CATEGORY_MAP = {
-    # 1. Backdoor / C2
+    # 1. Execution Control / Access
+    "code_injection": "CODE_INJECTION",
+    "indirect-execution": "INDIRECT_EXECUTION",
+    "deserialization": "DESERIALIZATION",
+    "privilege_escalation": "PRIV_ESC",
+
+    # 2. Persistence / Access
     "backdoor": "BACKDOOR",
-    "malicious-domain": "MALICIOUS_DOMAIN",
     "persistence": "PERSISTENCE",
     
-    # 2. Execution / Payload
+    # 3. Delivery / Infection
     "malware-dropper": "DROPPER",
-    "indirect-execution": "INDIRECT_EXECUTION",
-    "code_injection": "CODE_INJECTION",
-    "deserialization": "DESERIALIZATION",
     
-    # 3. Impact / Damage
-    "destruction": "DESTRUCTION",
-    "credential_leak": "CREDENTIALS",
-    "abuse": "ABUSE", # Spam, Crypto-mining
-    
-    # 4. Evasion / Misc
+    # 4. Defense Evasion
     "obfuscation": "OBFUSCATION",
     "defense-evasion": "DEF_EVASION",
     "evasion": "EVASION",
+
+    # 5. File System Operations
     "file_manipulation": "FILE_OPS",
+    "destruction": "DESTRUCTION",
+    
+    # 6. Network Communication
+    "malicious-domain": "MALICIOUS_DOMAIN",
     "network": "NETWORK",
-    "privilege_escalation": "PRIV_ESC"
+    
+    # 7. Information Risk
+    "credential_leak": "CREDENTIALS",
+
+    # 8. Abuse Behavior
+    "abuse": "ABUSE", # Spam, Crypto-mining
 }
 
 # High-Level Categories for Executive Summary
@@ -597,17 +605,14 @@ class PoCAnalyzer:
         
         if verdict == "MALICIOUS":
             verdict_color = "red"
-            verdict_icon = "[MALICIOUS]"
         elif verdict == "SUSPICIOUS":
             verdict_color = "yellow"
-            verdict_icon = "[SUSPICIOUS]"
         else:
             verdict_color = "green"
-            verdict_icon = "[SAFE]"
         
         # Create summary panel
         summary = f"""[bold]File:[/bold] {report['filepath']}
-[bold]Verdict:[/bold] [{verdict_color}]{verdict_icon} {verdict}[/{verdict_color}]
+[bold]Verdict:[/bold] [{verdict_color}]{verdict}[/{verdict_color}]
 [bold]Risk Score:[/bold] {score}
 [bold]Thresholds:[/bold] SAFE (0) | SUSPICIOUS (1-{threshold-1}) | MALICIOUS ({threshold}+)"""
         

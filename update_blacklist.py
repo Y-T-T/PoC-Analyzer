@@ -40,7 +40,7 @@ def _get_urlhaus_data(max_entries: int = MAX_ENTRIES) -> list[str]:
         seen_entries = set()
         
         # CSV fields: id, dateadded, url, url_status, last_online, threat, ...
-        # We only take the url (field 2)
+        # Only take the url (field 2)
         for row in csv_reader:
             if len(row) > 2:
                 full_url = row[2]
@@ -84,7 +84,7 @@ def _get_urlhaus_data(max_entries: int = MAX_ENTRIES) -> list[str]:
 def update_blacklist_file(new_urls: list[str]=None, max_entries: int = MAX_ENTRIES) -> None:
     """Update blacklist file, preserving user manually input content"""
     if new_urls is None:
-        new_urls = _get_urlhaus_data()
+        new_urls = _get_urlhaus_data(max_entries)
     if not new_urls:
         print("[!] No new URLs to update.")
         return
