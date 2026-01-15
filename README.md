@@ -18,8 +18,11 @@ Unlike traditional SAST tools that search for *vulnerabilities* in code, PoC Ana
 
 ## Demo
 
-![PoC Analyzer Demo](demo.png)
-*Figure: PoC Analyzer detecting a malicious script.*
+![PoC Analyzer Demo Directory](demo_dir.png)
+*Figure: PoC Analyzer detecting a malicious script in directory.*
+
+![PoC Analyzer Demo File](demo_file.png)
+*Figure: Detailed risk analysis for a single file.*
 
 ---
 
