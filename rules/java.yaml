@@ -14,7 +14,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 30
-      category: rce
+      category: indirect-execution
 
   # Regula 2: Detect command injection via concatenation (High risk) -> Mark 75 points
   - id: java-command-injection
@@ -28,7 +28,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 75
-      category: rce
+      category: indirect-execution
 
   # Regula 3: Detect reverse shell patterns (Critical) -> Mark 100 points
   - id: java-reverse-shell-stream

@@ -3,7 +3,7 @@
 # ==========================================
 
 rules:
-  # Regula 1: High risk subprocess (shell=True, os.system) -> High/Error
+  # Regula 1-A: High risk subprocess (shell=True, os.system) -> High/CRITICAL
   - id: python-dangerous-subprocess-shell
     pattern-either:
       - pattern: subprocess.call(..., shell=True, ...)
@@ -22,7 +22,7 @@ rules:
     severity: WARNING
     metadata:
       risk_score: 60
-      category: rce
+      category: indirect-execution
 
   # Regula 1-B: Low/Info risk subprocess (List argument, no shell=True) -> Low
   - id: python-subprocess-list-args
@@ -39,7 +39,41 @@ rules:
     severity: INFO
     metadata:
       risk_score: 10
-      category: rce
+      category: indirect-execution
+  
+  # Regula 1-C: Suspicious commands in subprocess list (High Risk)
+  - id: python-suspicious-dropper-binary
+    patterns:
+      - pattern-either:
+          - pattern: subprocess.run([$BIN, ...], ...)
+          - pattern: subprocess.call([$BIN, ...], ...)
+          - pattern: subprocess.Popen([$BIN, ...], ...)
+      - metavariable-regex:
+          metavariable: $BIN
+          regex: "['\"](wget|curl|certutil|bitsadmin)['\"]"
+    message: "[Python] Critical: Script attempts to download external files using '$BIN'. This is typical 'Dropper' behavior."
+    languages: [python]
+    severity: CRITICAL
+    metadata:
+      risk_score: 80
+      category: malware-dropper
+  
+  # Regula 1-D: Suspicious shell binaries in subprocess list (Medium Risk)
+  - id: python-suspicious-shell-binary
+    patterns:
+      - pattern-either:
+          - pattern: subprocess.run([$BIN, ...], ...)
+          - pattern: subprocess.call([$BIN, ...], ...)
+          - pattern: subprocess.Popen([$BIN, ...], ...)
+      - metavariable-regex:
+          metavariable: $BIN
+          regex: "['\"](bash|sh|zsh|dash|powershell|cmd)['\"]"
+    message: "[Python] Warning: Script invokes a shell ('$BIN') inside Python. Check for hidden payloads."
+    languages: [python]
+    severity: WARNING
+    metadata:
+      risk_score: 60
+      category: indirect-execution
 
   # Regula 2: Detect reverse shell patterns (Critical) -> Mark 100 points
   - id: python-reverse-shell
@@ -64,7 +98,7 @@ rules:
               subprocess.call(['/bin/sh', ...], ...)
     message: "[Python] Critical: Potential reverse shell detected."
     languages: [python]
-    severity: ERROR
+    severity: CRITICAL
     metadata:
       risk_score: 100
       category: backdoor
@@ -127,7 +161,7 @@ rules:
           - pattern: os.system('/bin/bash')
     message: "[Python] Critical: Shell spawned in socket context - likely reverse shell."
     languages: [python]
-    severity: ERROR
+    severity: CRITICAL
     metadata:
       risk_score: 90
       category: backdoor
@@ -173,7 +207,7 @@ rules:
   #         queue_gpt_retry($ID, $PROMPT)
   #   message: "[Python] Critical: VulnWatchDog malware detected. This tool pretends to be a scanner but facilitates the download of malicious CVE PoCs (backdoors) to the local machine."
   #   languages: [python]
-  #   severity: ERROR
+  #   severity: CRITICAL
   #   metadata:
   #     risk_score: 100
   #     category: malware

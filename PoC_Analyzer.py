@@ -5,7 +5,7 @@ import os
 import argparse
 from typing import Dict, Any, Set
 from rich.console import Console
-from rich.table import Table
+from rich.table import Table, Column
 from rich.panel import Panel
 from rich import box
 import concurrent.futures
@@ -351,7 +351,10 @@ class PoCAnalyzer:
         progress = Progress(
             SpinnerColumn(),
             # This is the only column everyone will see: text description
-            TextColumn("{task.description}"), 
+            TextColumn(
+                "{task.description}", 
+                table_column=Column(width=35, overflow="ellipsis", no_wrap=True)
+            ),
             
             # The following columns are only shown for the Total task; Workers will leave these blank
             ConditionalBarColumn(bar_width=None),
@@ -540,7 +543,7 @@ class PoCAnalyzer:
                 # Category tag mapping
                 category_map = {
                     "backdoor": "[BACKDOOR]",
-                    "rce": "[RCE]",
+                    "indirect-execution": "[INDIRECT_EXECUTION]",
                     "obfuscation": "[OBFUSCATION]",
                     "file_manipulation": "[FILE_OPS]",
                     "credential_leak": "[CREDENTIALS]",

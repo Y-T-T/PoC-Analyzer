@@ -19,7 +19,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 30
-      category: rce
+      category: indirect-execution
 
   # Regula 2: Detect Windows process creation (High risk) -> Mark 50 points
   - id: c-windows-shell-execution
@@ -36,7 +36,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 50
-      category: rce
+      category: indirect-execution
 
 
 

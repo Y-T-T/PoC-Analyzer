@@ -49,7 +49,7 @@ rules:
     severity: WARNING
     metadata:
       risk_score: 30
-      category: rce
+      category: indirect-execution
 
   # Regula 2: Detect reverse shell patterns (High risk) -> Mark 100 points
   - id: js-reverse-shell-net

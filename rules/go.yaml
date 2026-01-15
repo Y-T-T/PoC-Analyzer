@@ -16,7 +16,7 @@ rules:
     severity: WARNING
     metadata:
       risk_score: 50
-      category: rce
+      category: indirect-execution
 
   # Regula 2: Detect command execution with shell (High risk) -> Mark 70 points
   - id: go-shell-execution
@@ -33,7 +33,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 70
-      category: rce
+      category: indirect-execution
 
   # Regula 3: Detect reverse shell patterns (Critical) -> Mark 100 points
   - id: go-reverse-shell-pattern
@@ -118,7 +118,7 @@ rules:
     severity: WARNING
     metadata:
       risk_score: 60
-      category: rce
+      category: indirect-execution
 
   # Regula 10: Detect file operations in sensitive paths (Medium risk) -> Mark 50 points
   - id: go-sensitive-file-ops

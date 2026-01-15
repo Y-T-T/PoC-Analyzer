@@ -63,7 +63,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 40
-      category: rce
+      category: indirect-execution
 
   # Regula 5: Detect unsafe deserialization (High risk) -> Mark 75 points
   - id: php-unsafe-unserialize

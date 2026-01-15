@@ -29,7 +29,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 100
-      category: rce
+      category: indirect-execution
 
   # Regula 3: Detect PowerShell execution policy bypass (High risk) -> Mark 70 points
   - id: ps-execution-policy-bypass

@@ -13,7 +13,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 85
-      category: rce
+      category: indirect-execution
 
   # Regula 3: Detect PowerShell download techniques (High risk) -> Mark 80 points
   - id: batch-powershell-download
@@ -23,7 +23,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 80
-      category: rce
+      category: indirect-execution
 
   # Regula 4: Detect mshta execution (High risk) -> Mark 85 points
   - id: batch-mshta-execution
@@ -123,7 +123,7 @@ rules:
     severity: WARNING
     metadata:
       risk_score: 60
-      category: rce
+      category: indirect-execution
 
   # Regula 14: Detect UAC bypass attempts (High risk) -> Mark 85 points
   - id: batch-uac-bypass

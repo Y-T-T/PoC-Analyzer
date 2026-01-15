@@ -54,7 +54,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 80
-      category: rce
+      category: indirect-execution
 
   # Regula 5: Detect base64 decoded execution (Obfuscation) -> Mark 90 points
   - id: bash-base64-decode-exec
