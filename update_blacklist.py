@@ -10,6 +10,16 @@ URLHAUS_CSV_URL = "https://urlhaus.abuse.ch/downloads/csv_recent/"
 BLACKLIST_FILE = "rules/data/blacklist.txt"
 MAX_ENTRIES = 500 # Restrict to top 500 entries
 
+# Trusted domains that should not be blocked entirely
+TRUSTED_DOMAINS = {
+    "github.com", "www.github.com", "raw.githubusercontent.com",
+    "gitlab.com", "pastebin.com", "cdn.discordapp.com",
+    "discord.com", "media.discordapp.net", "api.telegram.org",
+    "t.me", "drive.google.com", "docs.google.com", "dropbox.com", 
+    "sites.google.com", "googleapis.com", "amazonaws.com",
+    "onedrive.live.com", "sharepoint.com"
+}
+
 # Markers to distinguish auto-generated and manually input content
 MARKER_START = "# ================== AUTO-GENERATED URLHAUS START =================="
 MARKER_END = "# ================== AUTO-GENERATED URLHAUS END =================="
@@ -27,7 +37,7 @@ def get_urlhaus_data():
         
         csv_reader = csv.reader(lines)
         urls = []
-        seen_hosts = set()
+        seen_entries = set()
         
         # CSV fields: id, dateadded, url, url_status, last_online, threat, ...
         # We only take the url (field 2)
@@ -41,12 +51,22 @@ def get_urlhaus_data():
                     
                     # If there is a Port (e.g., 1.2.3.4:80), remove the Port and keep the IP/Domain
                     if ':' in host:
-                        host = host.split(':')[0]
+                        clean_host = host.split(':')[0]
+                    else:
+                        clean_host = host
+
+                    # Determination logic: Trusted domains use full path, others use domain only
+                    if clean_host in TRUSTED_DOMAINS:
+                        # Construct specific path e.g., github.com/malware/repo
+                        # parsed.path usually starts with /, so host + parsed.path works well
+                        entry = clean_host + parsed.path
+                    else:
+                        entry = clean_host
                         
-                    if host and host not in seen_hosts:
-                        seen_hosts.add(host)
-                        # Escape the Host to convert it into a Regex pattern
-                        safe_pattern = re.escape(host)
+                    if entry and entry not in seen_entries:
+                        seen_entries.add(entry)
+                        # Escape the entry to convert it into a Regex pattern
+                        safe_pattern = re.escape(entry)
                         urls.append(safe_pattern)
                 except Exception:
                     continue
@@ -54,7 +74,7 @@ def get_urlhaus_data():
                 if len(urls) >= MAX_ENTRIES:
                     break
         
-        print(f"[*] Fetched {len(urls)} unique malicious IPs/Domains.")
+        print(f"[*] Fetched {len(urls)} unique malicious IPs/Domains/URLs.")
         return urls
         
     except Exception as e:
