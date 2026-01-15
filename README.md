@@ -1,6 +1,6 @@
 # PoC Analyzer (Proof-of-Concept Malicious Intent Detector)
 
-![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python) ![Semgrep](https://img.shields.io/badge/Engine-Semgrep-green) ![License](https://img.shields.io/badge/License-MIT-purple) ![Status](https://img.shields.io/badge/Status-Beta-orange)
+![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python) ![Semgrep](https://img.shields.io/badge/Engine-Semgrep-green) ![License](https://img.shields.io/badge/License-Apache%202.0-purple) ![Version](https://img.shields.io/badge/Version-1.0.0-green)
 
 Unlike traditional SAST tools that search for *vulnerabilities* in code, PoC Analyzer scans for **Malicious Intent**. It is built to validate third-party Proof-of-Concept (PoC) scripts downloaded from GitHub, Exploit-DB, or other public sources, ensuring they do not contain hidden backdoors, reverse shells, or malware droppers before you execute them.
 
