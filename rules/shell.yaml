@@ -113,7 +113,7 @@ rules:
       - pattern-regex: ">>\\s*(/etc/passwd|/etc/shadow|/etc/sudoers|~/.bashrc|/etc/rc\\.local)"
     message: "[Shell] High: Writing to sensitive system files."
     languages: [bash, sh]
-    severity: WARNING
+    severity: ERROR
     metadata:
       risk_score: 70
       category: persistence
@@ -140,7 +140,7 @@ rules:
       - pattern: rm ... ~/.bash_history
     message: "[Shell] High: History clearing - anti-forensics."
     languages: [bash, sh]
-    severity: WARNING
+    severity: ERROR
     metadata:
       risk_score: 60
       category: evasion
@@ -166,45 +166,45 @@ rules:
       - pattern: eval $(base64 ...)
     message: "[Shell] High: Eval with command substitution."
     languages: [bash, sh]
-    severity: WARNING
+    severity: ERROR
     metadata:
       risk_score: 65
       category: obfuscation
 
-  # Regula 14: Detect background execution (Medium risk) -> Mark 50 points
+  # Regula 14: Detect background execution (High risk) -> Mark 65 points
   - id: bash-background-execution
     pattern-either:
       - pattern: nohup ... &
       - pattern: screen -dmS ...
       - pattern: tmux new-session -d ...
-    message: "[Shell] Warning: Background/detached process execution."
+    message: "[Shell] High: Hidden background process creation (Miner/Botnet behavior)."
     languages: [bash, sh]
-    severity: WARNING
+    severity: ERROR
     metadata:
-      risk_score: 50
+      risk_score: 65
       category: persistence
 
-  # Regula 15: Detect LD_PRELOAD hijacking (Medium risk) -> Mark 55 points
+  # Regula 15: Detect LD_PRELOAD hijacking (High risk) -> Mark 85 points
   - id: bash-env-hijacking
     pattern-either:
       - pattern: export LD_PRELOAD=...
       - pattern: export LD_LIBRARY_PATH=...
       - pattern-regex: "LD_PRELOAD="
-    message: "[Shell] Warning: Environment variable hijacking."
+    message: "[Shell] Critical: Shared library hijacking (LD_PRELOAD) detected."
     languages: [bash, sh]
-    severity: WARNING
+    severity: ERROR
     metadata:
-      risk_score: 55
+      risk_score: 85
       category: privilege-escalation
 
-  # Regula 16: Detect port scanning (Low-Medium risk) -> Mark 40 points
+  # Regula 16: Detect port scanning (High risk) -> Mark 60 points
   - id: bash-port-scanning
     pattern-either:
       - pattern: nmap ...
       - pattern: nc -zv ...
-    message: "[Shell] Warning: Port scanning activity."
+    message: "[Shell] High: Internal port scanning detected (Lateral Movement)."
     languages: [bash, sh]
-    severity: WARNING
+    severity: ERROR
     metadata:
-      risk_score: 40
+      risk_score: 60
       category: network
