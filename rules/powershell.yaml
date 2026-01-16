@@ -91,7 +91,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 95
-      category: code_injection
+      category: code-injection
 
   # Regula 8: Detect Persistence via Registry (High) -> Mark 80 points
   - id: ps-persistence-registry

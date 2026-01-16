@@ -3,7 +3,7 @@
 # ==========================================
 
 rules:
-  # Regula 1-A: High risk subprocess (shell=True, os.system) -> High/CRITICAL
+  # Regula 1-A: High risk subprocess (shell=True, os.system) -> High/ERROR
   - id: python-dangerous-subprocess-shell
     pattern-either:
       - pattern: subprocess.call(..., shell=True, ...)
@@ -17,9 +17,9 @@ rules:
           - pattern-inside: |
               $SUB = __import__('subprocess')
               ...
-    message: "[Python] Warning: Script executes system commands with shell=True (High Risk)."
+    message: "[Python] High: Script executes system commands with shell=True."
     languages: [python]
-    severity: WARNING
+    severity: ERROR
     metadata:
       risk_score: 60
       category: indirect-execution
@@ -34,9 +34,9 @@ rules:
       - pattern-not: subprocess.call(..., shell=True, ...)
       - pattern-not: subprocess.run(..., shell=True, ...)
       - pattern-not: subprocess.Popen(..., shell=True, ...)
-    message: "[Python] Info: Script executes external commands (List argument). Verify usage."
+    message: "[Python] Medium: Script executes external commands (List argument). Verify usage."
     languages: [python]
-    severity: INFO
+    severity: WARNING
     metadata:
       risk_score: 10
       category: indirect-execution
@@ -53,7 +53,7 @@ rules:
           regex: "['\"](wget|curl|certutil|bitsadmin)['\"]"
     message: "[Python] Critical: Script attempts to download external files using '$BIN'. This is typical 'Dropper' behavior."
     languages: [python]
-    severity: CRITICAL
+    severity: ERROR
     metadata:
       risk_score: 80
       category: malware-dropper
@@ -68,9 +68,9 @@ rules:
       - metavariable-regex:
           metavariable: $BIN
           regex: "['\"](bash|sh|zsh|dash|powershell|cmd)['\"]"
-    message: "[Python] Warning: Script invokes a shell ('$BIN') inside Python. Check for hidden payloads."
+    message: "[Python] Critical: Script invokes a shell ('$BIN') inside Python. Check for hidden payloads."
     languages: [python]
-    severity: WARNING
+    severity: ERROR
     metadata:
       risk_score: 60
       category: indirect-execution
@@ -98,7 +98,7 @@ rules:
               subprocess.call(['/bin/sh', ...], ...)
     message: "[Python] Critical: Potential reverse shell detected."
     languages: [python]
-    severity: CRITICAL
+    severity: ERROR
     metadata:
       risk_score: 100
       category: backdoor
@@ -139,12 +139,12 @@ rules:
       - metavariable-regex:
           metavariable: $PATH
           regex: ".*((/etc/|/bin/|/boot/|/usr/bin/|\\.ssh/|/root/|cron|passwd|shadow).*|.*\\.so$|.*\\.dll$)"
-    message: "[Python] Warning: Script attempts to write to sensitive system locations."
+    message: "[Python] High: Script attempts to write to sensitive system locations."
     languages: [python]
-    severity: WARNING
+    severity: ERROR
     metadata:
       risk_score: 30
-      category: file_manipulation
+      category: file-manipulation
 
   # Regula 6: Detect network backdoor spawn (Critical) -> Mark 90 points
   - id: python-spawn-shell-in-socket
@@ -161,7 +161,7 @@ rules:
           - pattern: os.system('/bin/bash')
     message: "[Python] Critical: Shell spawned in socket context - likely reverse shell."
     languages: [python]
-    severity: CRITICAL
+    severity: ERROR
     metadata:
       risk_score: 90
       category: backdoor
@@ -173,18 +173,18 @@ rules:
       - pattern: importlib.import_module($STR)
       - pattern: exec("import ...")
       - pattern: eval("import ...")
-    message: "[Python] Warning: Dynamic code import detected."
+    message: "[Python] High: Dynamic code import detected."
     languages: [python]
-    severity: WARNING
+    severity: ERROR
     metadata:
       risk_score: 20
-      category: code_injection
+      category: code-injection
 
   # Regula 9: Detect raw socket usage (Low-Medium risk) -> Mark 20 points
   - id: python-raw-socket
     patterns:
       - pattern: socket.socket(socket.AF_INET, socket.SOCK_RAW, ...)
-    message: "[Python] Info: Raw socket usage detected - potential packet manipulation."
+    message: "[Python] Medium: Raw socket usage detected - potential packet manipulation."
     languages: [python]
     severity: WARNING
     metadata:
@@ -207,7 +207,7 @@ rules:
   #         queue_gpt_retry($ID, $PROMPT)
   #   message: "[Python] Critical: VulnWatchDog malware detected. This tool pretends to be a scanner but facilitates the download of malicious CVE PoCs (backdoors) to the local machine."
   #   languages: [python]
-  #   severity: CRITICAL
+  #   severity: ERROR
   #   metadata:
   #     risk_score: 100
   #     category: malware

@@ -116,12 +116,12 @@ rules:
           - metavariable-regex:
               metavariable: $PATH
               regex: ".*(\\.php|\\.phtml|\\.php5|\\.inc).*"
-    message: "[PHP] Warning: File writing detected - potential dropper or backdoor persistence."
+    message: "[PHP] Medium: File writing detected - potential dropper or backdoor persistence."
     languages: [php]
     severity: WARNING
     metadata:
       risk_score: 40
-      category: file_manipulation
+      category: file-manipulation
 
   # Regula 8: Detect reverse shell patterns (Critical) -> Mark 95 points
   - id: php-reverse-shell
@@ -157,7 +157,7 @@ rules:
           - pattern-inside: |
               $TO = $_POST[...];
               ...
-    message: "[PHP] Warning: Mail function with user input - potential spam/phishing tool."
+    message: "[PHP] Medium: Mail function with user input - potential spam/phishing tool."
     languages: [php]
     severity: WARNING
     metadata:

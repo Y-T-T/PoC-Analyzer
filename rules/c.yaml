@@ -3,7 +3,7 @@
 # ==========================================
 
 rules:
-  # Regula 1: Detect direct system command execution (High risk) -> Mark 30 points
+  # Regula 1: Detect direct system command execution (High risk) -> Mark 80 points
   - id: c-system-command
     pattern-either:
       - pattern: system(...)
@@ -18,10 +18,10 @@ rules:
     languages: [c, cpp]
     severity: ERROR
     metadata:
-      risk_score: 30
+      risk_score: 80
       category: indirect-execution
 
-  # Regula 2: Detect Windows process creation (High risk) -> Mark 50 points
+  # Regula 2: Detect Windows process creation (High risk) -> Mark 80 points
   - id: c-windows-shell-execution
     pattern-either:
       - pattern: ShellExecute(...)
@@ -35,11 +35,9 @@ rules:
     languages: [c, cpp]
     severity: ERROR
     metadata:
-      risk_score: 50
+      risk_score: 80
       category: indirect-execution
-
-
-
+      
   # Regula 5: Detect reverse shell pattern (Critical) -> Mark 100 points
   - id: c-reverse-shell-pattern
     patterns:
@@ -82,7 +80,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 75
-      category: privilege_escalation
+      category: privilege-escalation
 
   # Regula 7: Detect shellcode execution patterns (Critical) -> Mark 90 points
   - id: c-shellcode-execution
@@ -110,9 +108,9 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 90
-      category: code_injection
+      category: code-injection
 
-  # Regula 8: Detect file operations in sensitive paths (Medium risk) -> Mark 50 points
+  # Regula 8: Detect file operations in sensitive paths (Critical) -> Mark 90 points
   - id: c-sensitive-file-ops
     patterns:
       - pattern-either:
@@ -125,12 +123,12 @@ rules:
       - metavariable-regex:
           metavariable: $PATH
           regex: ".*((/etc/|/bin/|/sbin/|/usr/bin/|/boot/|\\.ssh/|/root/|cron|passwd|shadow|sudoers).*)"
-    message: "[C/C++] Warning: File operation in sensitive system location."
+    message: "[C/C++] Critical: Malicious file write to sensitive system path."
     languages: [c, cpp]
-    severity: WARNING
+    severity: ERROR
     metadata:
-      risk_score: 50
-      category: file_manipulation
+      risk_score: 90
+      category: file-manipulation
 
   # Regula 9: Detect network socket operations (Low-Medium risk) -> Mark 30 points
   - id: c-socket-connection
@@ -143,10 +141,10 @@ rules:
     languages: [c, cpp]
     severity: INFO
     metadata:
-      risk_score: 30
+      risk_score: 10
       category: network
 
-  # Regula 10: Detect dynamic library loading (Medium risk) -> Mark 40 points
+  # Regula 10: Detect dynamic library loading (High risk) -> Mark 70 points
   - id: c-dynamic-loading
     pattern-either:
       - pattern: dlopen(...)
@@ -154,24 +152,22 @@ rules:
       - pattern: LoadLibraryA(...)
       - pattern: LoadLibraryW(...)
       - pattern: LoadLibraryEx(...)
-    message: "[C/C++] Warning: Dynamic library loading detected."
+    message: "[C/C++] High: Dynamic library loading detected (DLL Injection/Plugin)."
     languages: [c, cpp]
-    severity: WARNING
+    severity: ERROR
     metadata:
-      risk_score: 40
-      category: code_injection
+      risk_score: 70
+      category: code-injection
 
-
-
-  # Regula 12: Detect anti-debugging techniques (Medium risk) -> Mark 35 points
+  # Regula 12: Detect anti-debugging techniques (High risk) -> Mark 80 points
   - id: c-anti-debugging
     pattern-either:
       - pattern: ptrace(PTRACE_TRACEME, ...)
       - pattern: IsDebuggerPresent()
       - pattern: CheckRemoteDebuggerPresent(...)
-    message: "[C/C++] Warning: Anti-debugging technique detected."
+    message: "[C/C++] High: Anti-debugging evasion technique detected."
     languages: [c, cpp]
-    severity: WARNING
+    severity: ERROR
     metadata:
-      risk_score: 35
+      risk_score: 80
       category: evasion

@@ -19,10 +19,10 @@ console = Console()
 # Category display mapping and High-Level Grouping
 CATEGORY_MAP = {
     # 1. Execution Control / Access
-    "code_injection": "CODE_INJECTION",
+    "code-injection": "CODE_INJECTION",
     "indirect-execution": "INDIRECT_EXECUTION",
     "deserialization": "DESERIALIZATION",
-    "privilege_escalation": "PRIV_ESC",
+    "privilege-escalation": "PRIV_ESC",
 
     # 2. Persistence / Access
     "backdoor": "BACKDOOR",
@@ -37,7 +37,7 @@ CATEGORY_MAP = {
     "evasion": "EVASION",
 
     # 5. File System Operations
-    "file_manipulation": "FILE_OPS",
+    "file-manipulation": "FILE_OPS",
     "destruction": "DESTRUCTION",
     
     # 6. Network Communication
@@ -45,7 +45,7 @@ CATEGORY_MAP = {
     "network": "NETWORK",
     
     # 7. Information Risk
-    "credential_leak": "CREDENTIALS",
+    "credential-leak": "CREDENTIALS",
 
     # 8. Abuse Behavior
     "abuse": "ABUSE", # Spam, Crypto-mining
@@ -53,13 +53,13 @@ CATEGORY_MAP = {
 
 # High-Level Categories for Executive Summary
 THREAT_GROUPS = {
-    "Execution Control": ["code_injection", "indirect-execution", "deserialization", "privilege_escalation"],
+    "Execution Control": ["code-injection", "indirect-execution", "deserialization", "privilege-escalation"],
     "Persistence Access": ["backdoor", "persistence"],
     "Delivery Infection": ["malware-dropper"],
     "Defense Evasion": ["obfuscation", "defense-evasion", "evasion"],
-    "File System Ops": ["file_manipulation", "destruction"],
+    "File System Ops": ["file-manipulation", "destruction"],
     "Network Communication": ["network", "malicious-domain"],
-    "Information Risk": ["credential_leak"],
+    "Information Risk": ["credential-leak"],
     "Abuse Behavior": ["abuse"],
 }
 

@@ -3,7 +3,7 @@
 # ==========================================
 
 rules:
-  # Regula 1: Detect dangerous exec/spawn usage (Medium risk) -> Mark 30 points
+  # Regula 1: Detect dangerous exec/spawn usage (High risk) -> Mark 75 points
   - id: js-dangerous-exec
     pattern-either:
       - pattern: require('child_process').exec(...)
@@ -44,11 +44,11 @@ rules:
           - metavariable-regex:
               metavariable: $FUNC
               regex: "(exec|spawn|execSync|execFile|execFileSync)"
-    message: "[JS] Warning: Script executes system commands."
+    message: "[JS] Critical: Script executes system commands."
     languages: [javascript, typescript]
-    severity: WARNING
+    severity: ERROR
     metadata:
-      risk_score: 30
+      risk_score: 75
       category: indirect-execution
 
   # Regula 2: Detect reverse shell patterns (High risk) -> Mark 100 points
@@ -105,12 +105,12 @@ rules:
           - pattern-regex: "rm\\s+-rf\\s+"
           - pattern-inside: |
               $CP.exec("...", ...)
-    message: "[JS] Warning: Dangerous file deletion operation detected."
+    message: "[JS] High: Dangerous file deletion operation detected."
     languages: [javascript, typescript]
-    severity: WARNING
+    severity: ERROR
     metadata:
       risk_score: 30
-      category: file_manipulation
+      category: file-manipulation
 
   # Regula 5: Detect network shell spawn (Critical) -> Mark 90 points
   - id: js-spawn-shell-in-net

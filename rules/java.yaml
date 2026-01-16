@@ -68,7 +68,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 100
-      category: code_injection
+      category: code-injection
 
   # Regula 6: Detect dangerous reflection usage (High risk) -> Mark 40 points
   - id: java-reflection-loading
@@ -87,7 +87,7 @@ rules:
     severity: WARNING
     metadata:
       risk_score: 40
-      category: code_injection
+      category: code-injection
 
   # Regula 7: Detect JNI library loading (High risk) -> Mark 40 points
   - id: java-jni-loading
@@ -100,7 +100,7 @@ rules:
     severity: WARNING
     metadata:
       risk_score: 40
-      category: code_injection
+      category: code-injection
 
 
 
@@ -119,7 +119,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 85
-      category: code_injection
+      category: code-injection
 
 
 
@@ -153,4 +153,4 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 90
-      category: code_injection
+      category: code-injection

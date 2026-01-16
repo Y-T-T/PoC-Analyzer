@@ -33,7 +33,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 85
-      category: code_injection
+      category: code-injection
 
   # Regula 5: Detect rundll32 abuse (High risk) -> Mark 75 points
   - id: batch-rundll32-abuse
@@ -43,7 +43,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 75
-      category: code_injection
+      category: code-injection
 
   # Regula 6: Detect regsvr32 abuse (High risk) -> Mark 75 points
   - id: batch-regsvr32-abuse
@@ -53,7 +53,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 75
-      category: code_injection
+      category: code-injection
 
   # Regula 7: Detect registry persistence (Critical) -> Mark 80 points
   - id: batch-registry-persistence
@@ -133,7 +133,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 85
-      category: privilege_escalation
+      category: privilege-escalation
 
   # Regula 15: Detect event log clearing (High risk) -> Mark 75 points
   - id: batch-clear-event-logs
@@ -165,24 +165,24 @@ rules:
       risk_score: 80
       category: obfuscation
 
-  # Regula 18: Detect batch obfuscation (Medium risk) -> Mark 55 points
+  # Regula 18: Detect batch obfuscation (High risk) -> Mark 80 points
   - id: batch-caret-obfuscation
     pattern-regex: "([a-zA-Z]\\^){3,}"
-    message: "[Batch] Warning: Caret obfuscation detected (e.g., p^o^w^e^r^s^h^e^l^l)."
+    message: "[Batch] High: Obfuscation detected (Caret insertion) - indicates evasion."
     languages: [generic]
-    severity: WARNING
+    severity: ERROR
     metadata:
-      risk_score: 55
+      risk_score: 80
       category: obfuscation
 
-  # Regula 19: Detect admin share access (Medium risk) -> Mark 50 points
+  # Regula 19: Detect admin share access (High risk) -> Mark 85 points
   - id: batch-admin-share-access
     pattern-regex: "(?i)(net\\s+use|copy|xcopy|move).*\\$\\\\(c|admin|ipc)\\$"
-    message: "[Batch] Warning: Admin share access (lateral movement)."
+    message: "[Batch] Critical: Lateral movement via Admin Share (IPC$/Admin$)."
     languages: [generic]
-    severity: WARNING
+    severity: ERROR
     metadata:
-      risk_score: 50
+      risk_score: 85
       category: network
 
   # Regula 20: Detect credential dumping tools (Critical) -> Mark 95 points
@@ -193,4 +193,4 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 95
-      category: credential_leak
+      category: credential-leak

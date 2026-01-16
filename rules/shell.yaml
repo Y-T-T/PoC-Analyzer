@@ -39,7 +39,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 50
-      category: code_injection
+      category: code-injection
 
   # Regula 4: Detect curl | bash download and execute (High risk) -> Mark 80 points
   - id: bash-curl-pipe-bash
@@ -81,7 +81,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 85
-      category: privilege_escalation
+      category: privilege-escalation
 
   # Regula 7: Detect cron job persistence (High risk) -> Mark 75 points
   - id: bash-cron-persistence
@@ -163,7 +163,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 70
-      category: credential_leak
+      category: credential-leak
 
   # Regula 13: Detect eval obfuscation (Medium-High risk) -> Mark 65 points
   - id: bash-eval-obfuscation
@@ -201,7 +201,7 @@ rules:
     severity: WARNING
     metadata:
       risk_score: 55
-      category: privilege_escalation
+      category: privilege-escalation
 
   # Regula 16: Detect port scanning (Low-Medium risk) -> Mark 40 points
   - id: bash-port-scanning

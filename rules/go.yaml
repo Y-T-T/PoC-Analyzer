@@ -3,7 +3,7 @@
 # ==========================================
 
 rules:
-  # Regula 1: Detect direct system command execution (Medium risk) -> Mark 50 points
+  # Regula 1: Detect direct system command execution (High risk) -> Mark 75 points
   - id: go-dangerous-exec
     pattern-either:
       - pattern: exec.Command(...)
@@ -11,14 +11,14 @@ rules:
       - pattern: syscall.Exec(...)
       - pattern: syscall.ForkExec(...)
       - pattern: syscall.StartProcess(...)
-    message: "[Go] Warning: Direct system command execution detected."
+    message: "[Go] Critical: Direct system command execution detected."
     languages: [go]
-    severity: WARNING
+    severity: ERROR
     metadata:
-      risk_score: 50
+      risk_score: 75
       category: indirect-execution
 
-  # Regula 2: Detect command execution with shell (High risk) -> Mark 70 points
+  # Regula 2: Detect command execution with shell (Critical) -> Mark 85 points
   - id: go-shell-execution
     patterns:
       - pattern-either:
@@ -28,11 +28,11 @@ rules:
           - pattern: exec.Command("/bin/bash", "-c", ...)
           - pattern: exec.Command("cmd", "/c", ...)
           - pattern: exec.Command("powershell", ...)
-    message: "[Go] High: Shell execution with potential command injection risk."
+    message: "[Go] Critical: Shell execution with potential command injection risk."
     languages: [go]
     severity: ERROR
     metadata:
-      risk_score: 70
+      risk_score: 85
       category: indirect-execution
 
   # Regula 3: Detect reverse shell patterns (Critical) -> Mark 100 points
@@ -89,7 +89,7 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 75
-      category: file_manipulation
+      category: file-manipulation
 
   # Regula 6: Detect network connections (Low-Medium risk) -> Mark 35 points
   - id: go-network-connection
@@ -105,7 +105,7 @@ rules:
       risk_score: 10
       category: network
 
-  # Regula 9: Detect CGO dangerous usage (Medium-High risk) -> Mark 60 points
+  # Regula 9: Detect CGO dangerous usage (High risk) -> Mark 80 points
   - id: go-cgo-dangerous
     pattern-either:
       - pattern: C.system(...)
@@ -113,14 +113,14 @@ rules:
       - pattern: C.popen(...)
       - pattern: C.malloc(...)
       - pattern: C.free(...)
-    message: "[Go] Warning: Dangerous CGO C function calls detected."
+    message: "[Go] High: Dangerous CGO execution detected - potential Evasion."
     languages: [go]
-    severity: WARNING
+    severity: ERROR
     metadata:
-      risk_score: 60
+      risk_score: 80
       category: indirect-execution
 
-  # Regula 10: Detect file operations in sensitive paths (Medium risk) -> Mark 50 points
+  # Regula 10: Detect file operations in sensitive paths (Critical) -> Mark 90 points
   - id: go-sensitive-file-ops
     patterns:
       - pattern-either:
@@ -131,12 +131,12 @@ rules:
       - metavariable-regex:
           metavariable: $PATH
           regex: ".*((/etc/|/bin/|/sbin/|/usr/bin/|\\.ssh/|/root/|cron|passwd|shadow).*)"
-    message: "[Go] Warning: File operation in sensitive system location."
+    message: "[Go] Critical: Malicious file write to sensitive system path."
     languages: [go]
-    severity: WARNING
+    severity: ERROR
     metadata:
-      risk_score: 50
-      category: file_manipulation
+      risk_score: 90
+      category: file-manipulation
 
   # Regula 11: Detect eval-like patterns via plugin (High risk) -> Mark 80 points
   - id: go-plugin-loading
@@ -150,4 +150,4 @@ rules:
     severity: ERROR
     metadata:
       risk_score: 80
-      category: code_injection
+      category: code-injection
