@@ -87,8 +87,8 @@ rules:
   - id: bash-cron-persistence
     pattern-either:
       - pattern: echo ... | crontab ...
-      - pattern: "... >> /etc/crontab"
-      - pattern: "... >> /etc/cron.d/..."
+      - pattern-regex: ">>\\s*/etc/crontab"
+      - pattern-regex: ">>\\s*/etc/cron\\.d/"
     message: "[Shell] High: Cron job persistence detected."
     languages: [bash, sh]
     severity: ERROR
@@ -99,9 +99,7 @@ rules:
   # Regula 8: Detect SSH key manipulation (High risk) -> Mark 80 points
   - id: bash-ssh-key-manipulation
     pattern-either:
-      - pattern: "... >> ~/.ssh/authorized_keys"
-      - pattern: "... >> /root/.ssh/authorized_keys"
-      - pattern: "... >> /home/.../.ssh/authorized_keys"
+      - pattern-regex: ">>\\s*.*authorized_keys"
     message: "[Shell] High: SSH key manipulation."
     languages: [bash, sh]
     severity: ERROR
@@ -112,11 +110,7 @@ rules:
   # Regula 9: Detect sensitive file writes (Persistence) -> Mark 70 points
   - id: bash-suspicious-file-write
     pattern-either:
-      - pattern: "... >> /etc/passwd"
-      - pattern: "... >> /etc/shadow"
-      - pattern: "... >> /etc/sudoers"
-      - pattern: "... >> ~/.bashrc"
-      - pattern: "... >> /etc/rc.local"
+      - pattern-regex: ">>\\s*(/etc/passwd|/etc/shadow|/etc/sudoers|~/.bashrc|/etc/rc\\.local)"
     message: "[Shell] High: Writing to sensitive system files."
     languages: [bash, sh]
     severity: WARNING
@@ -195,7 +189,7 @@ rules:
     pattern-either:
       - pattern: export LD_PRELOAD=...
       - pattern: export LD_LIBRARY_PATH=...
-      - pattern: LD_PRELOAD=... ...
+      - pattern-regex: "LD_PRELOAD="
     message: "[Shell] Warning: Environment variable hijacking."
     languages: [bash, sh]
     severity: WARNING

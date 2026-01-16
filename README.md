@@ -3,6 +3,10 @@
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python) ![Semgrep](https://img.shields.io/badge/Engine-Semgrep-green) ![License](https://img.shields.io/badge/License-Apache%202.0-purple) ![Version](https://img.shields.io/badge/Version-1.0.0-green)
 
 Unlike traditional SAST tools that search for *vulnerabilities* in code, PoC Analyzer scans for **Malicious Intent**. It is built to validate third-party Proof-of-Concept (PoC) scripts downloaded from GitHub, Exploit-DB, or other public sources, ensuring they do not contain hidden backdoors, reverse shells, or malware droppers before you execute them.
+> **Important Use Case Warning**  
+> This tool is specifically designed for analyzing **Proof-of-Concept (PoC)** exploit scripts.  
+> It is **NOT** intended for general malware detection or scanning production software/DevOps scripts.  
+> Scanning detailed installation scripts, CI/CD pipelines, or complex system administration tools may result in high false positive rates, as these tools legitimately perform "suspicious" actions (e.g., file system modification, network downloads, privilege escalation) that this analyzer flags as malicious behavior in an exploit context.
 
 ---
 
