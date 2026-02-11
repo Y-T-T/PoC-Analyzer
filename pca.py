@@ -23,6 +23,8 @@ CATEGORY_MAP = {
     "indirect-execution": "INDIRECT_EXECUTION",
     "deserialization": "DESERIALIZATION",
     "privilege-escalation": "PRIV_ESC",
+    "memory-execution": "SHELLCODE",
+    "memory-manipulation": "RWX_MEM",
 
     # 2. Persistence / Access
     "backdoor": "BACKDOOR",
@@ -30,11 +32,13 @@ CATEGORY_MAP = {
     
     # 3. Delivery / Infection
     "malware-dropper": "DROPPER",
+    "worm-propagation": "WORM",
     
     # 4. Defense Evasion
     "obfuscation": "OBFUSCATION",
     "defense-evasion": "DEF_EVASION",
     "evasion": "EVASION",
+    "structure": "STRUCTURE",
 
     # 5. File System Operations
     "file-manipulation": "FILE_OPS",
@@ -43,9 +47,11 @@ CATEGORY_MAP = {
     # 6. Network Communication
     "malicious-domain": "MALICIOUS_DOMAIN",
     "network": "NETWORK",
+    "reconnaissance": "RECON",
     
     # 7. Information Risk
     "credential-leak": "CREDENTIALS",
+    "data-exfiltration": "EXFILTRATION",
 
     # 8. Abuse Behavior
     "abuse": "ABUSE", # Spam, Crypto-mining
@@ -53,13 +59,13 @@ CATEGORY_MAP = {
 
 # High-Level Categories for Executive Summary
 THREAT_GROUPS = {
-    "Execution Control": ["code-injection", "indirect-execution", "deserialization", "privilege-escalation"],
+    "Execution Control": ["code-injection", "indirect-execution", "deserialization", "privilege-escalation", "memory-execution", "memory-manipulation"],
     "Persistence Access": ["backdoor", "persistence"],
-    "Delivery Infection": ["malware-dropper"],
-    "Defense Evasion": ["obfuscation", "defense-evasion", "evasion"],
+    "Delivery Infection": ["malware-dropper", "worm-propagation"],
+    "Defense Evasion": ["obfuscation", "defense-evasion", "evasion", "structure"],
     "File System Ops": ["file-manipulation", "destruction"],
-    "Network Communication": ["network", "malicious-domain"],
-    "Information Risk": ["credential-leak"],
+    "Network Communication": ["network", "malicious-domain", "reconnaissance"],
+    "Information Risk": ["credential-leak", "data-exfiltration"],
     "Abuse Behavior": ["abuse"],
 }
 
@@ -695,11 +701,11 @@ def parse_arguments():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python PoC_Analyzer.py test_PoC/malicious_test.js
-  python PoC_Analyzer.py -c python.yaml -t 120 test_PoC/malicious_test.py
-  python PoC_Analyzer.py --all-rules test_PoC/malicious_test.php
-  python PoC_Analyzer.py -w 4 test_PoC/
-  python PoC_Analyzer.py -m 1000 test_PoC/malicious_test.py
+  python pca.py test_PoC/malicious_test.js
+  python pca.py -c python.yaml -t 120 test_PoC/malicious_test.py
+  python pca.py --all-rules test_PoC/malicious_test.php
+  python pca.py -w 4 test_PoC/
+  python pca.py -m 1000 test_PoC/malicious_test.py
         """
     )
     

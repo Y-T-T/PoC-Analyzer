@@ -7,7 +7,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY PoC_Analyzer.py .
+COPY pca.py .
 COPY rules/ ./rules/
 
 COPY test_samples.zip .
@@ -18,5 +18,5 @@ USER analyzer
 
 ENV TERM=xterm-256color
 ENV FORCE_COLOR=1
-ENTRYPOINT ["python", "PoC_Analyzer.py"]
+ENTRYPOINT ["python", "pca.py"]
 CMD ["-h"]

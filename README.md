@@ -130,7 +130,7 @@ pip install -r requirements.txt
 By default, the analyzer scans the target file using all rules found in the local `rules/` directory. It automatically filters rules based on the file extension.
 
 ```bash
-python PoC_Analyzer.py poc.py
+python pca.py poc.py
 ```
 
 > **Tip:** **File Mode vs Directory Mode**
@@ -142,7 +142,7 @@ python PoC_Analyzer.py poc.py
 You can specify a custom rule file or a different directory.
 
 ```bash
-python PoC_Analyzer.py -c rules/js.yaml poc.js
+python pca.py -c rules/js.yaml poc.js
 ```
 
 ### 3. Adjust Sensitivity
@@ -151,7 +151,7 @@ The default risk threshold is **100**. You can adjust this to be more aggressive
 
 ```bash
 # Strict mode: Any score above 80 is considered MALICIOUS
-python PoC_Analyzer.py -c rules/shell.yaml -t 80 poc.sh
+python pca.py -c rules/shell.yaml -t 80 poc.sh
 ```
 
 ### 4. Deep Scan
@@ -159,7 +159,7 @@ python PoC_Analyzer.py -c rules/shell.yaml -t 80 poc.sh
 By default, the analyzer only uses rules relevant to the file's extension (e.g., `.js` files are scanned with `js.yaml`). To scan a file against **ALL** rules (useful for polyglot files or embedded scripts like PowerShell inside JavaScript), use the `--all-rules` flag.
 
 ```bash
-python PoC_Analyzer.py --all-rules poc.js
+python pca.py --all-rules poc.js
 ```
 
 ### 5. Performance Tuning (Multi-threading)
@@ -168,7 +168,7 @@ For scanning large directories, you can increase the number of worker threads. T
 
 ```bash
 # Use 8 threads to scan a large project
-python PoC_Analyzer.py -w 8 test_PoC/malicious_proj/
+python pca.py -w 8 test_PoC/malicious_proj/
 ```
 
 ### 6. Blacklist Update Configuration
@@ -177,7 +177,7 @@ The tool automatically fetches the latest malicious URLs from URLHaus. You can c
 
 ```bash
 # Fetch top 1000 malicious domains for better coverage
-python PoC_Analyzer.py -m 1000 poc.py
+python pca.py -m 1000 poc.py
 ```
 
 ---

@@ -129,7 +129,7 @@ rules:
       risk_score: 80
       category: obfuscation
 
-  # Regula 5: Detect sensitive file operations (Medium risk) -> Mark 30 points
+  # Regula 5: Detect sensitive file operations (High risk) -> Mark 80 points
   - id: python-sensitive-file-ops
     patterns:
       - pattern-either:
@@ -143,7 +143,7 @@ rules:
     languages: [python]
     severity: ERROR
     metadata:
-      risk_score: 30
+      risk_score: 80
       category: file-manipulation
 
   # Regula 6: Detect network backdoor spawn (Critical) -> Mark 90 points
@@ -191,23 +191,347 @@ rules:
       risk_score: 10
       category: network
 
-  # # Regula 10: Detect VulnWatchDog Malware (Critical) -> Mark 100 points
-  # - id: python-malware-vulnwatchdog
-  #   pattern-either:
-  #     # Specific logic for building the GPT prompt with parsed search results
-  #     - patterns:
-  #         - pattern: |
-  #             def build_prompt(cve_info: Dict, search_results: List[Dict], poc_results_str: str) -> str:
-  #                 ...
-  #     # Specific logic for searching GitHub to download PoCs automatically
-  #     - pattern: |
-  #         $QUERY = f"{query}+(poc+OR+exploit)+NOT+test"
-  #     # Specific internal function call combination for the payload
-  #     - pattern: |
-  #         queue_gpt_retry($ID, $PROMPT)
-  #   message: "[Python] Critical: VulnWatchDog malware detected. This tool pretends to be a scanner but facilitates the download of malicious CVE PoCs (backdoors) to the local machine."
-  #   languages: [python]
-  #   severity: ERROR
-  #   metadata:
-  #     risk_score: 100
-  #     category: malware
+  # Regula 10: Structural - Wildcard imports (Unnecessary modules/Poor structure)
+  - id: python-wildcard-import
+    pattern: from $MOD import *
+    message: "[Python] Low: Wildcard import detected. This pollutes the namespace and imports unnecessary modules."
+    languages: [python]
+    severity: INFO
+    metadata:
+      risk_score: 5
+      category: structure
+
+  # Regula 11: Structural - Multiple statements on one line (Readability/Obfuscation)
+  - id: python-multi-statement-line
+    patterns:
+       - pattern: $X; $Y
+       - pattern-regex: ";"
+    message: "[Python] Low: Multiple statements on one line using ';'. This reduces readability and is often used in obfuscation."
+    languages: [python]
+    severity: INFO
+    metadata:
+      risk_score: 10
+      category: structure
+
+  # Regula 12: Structural - Swallowed exceptions (Dead code/Fake flow)
+  - id: python-swallowed-exception
+    patterns:
+      - pattern: |
+          try:
+            ...
+          except:
+            pass
+      - pattern: |
+          try:
+            ...
+          except $EX:
+            pass
+    message: "[Python] Medium: Empty exception handler detected (pass in except). This may be hiding errors or part of a fake flow."
+    languages: [python]
+    severity: WARNING
+    metadata:
+      risk_score: 20
+      category: structure
+
+  # Regula 13: Structural - Dead code (Explicit Dead Code)
+  - id: python-dead-code-if-false
+    pattern: |
+      if False:
+        ...
+    message: "[Python] Low: Explicit dead code detected (if False)."
+    languages: [python]
+    severity: INFO
+    metadata:
+      risk_score: 5
+      category: structure
+
+  # Regula 14: Detect Shellcode execution patterns (Critical)
+  - id: python-shellcode-execution
+    pattern-either:
+      - patterns:
+          - pattern: ctypes.windll.kernel32.VirtualAlloc(...)
+      - patterns:
+          - pattern: ctypes.windll.kernel32.CreateThread(...)
+      - patterns:
+          - pattern: ctypes.windll.kernel32.RtlMoveMemory(...)
+      - patterns:
+          - pattern-inside: |
+              import ctypes
+              ...
+          - pattern-either:
+              - pattern: ctypes.memmove(...)
+              - pattern: ctypes.cast(..., ctypes.CFUNCTYPE(...))
+    message: "[Python] Critical: Shellcode execution pattern detected (VirtualAlloc/CreateThread/ctypes cast)."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      risk_score: 95
+      category: memory-execution
+
+    # Regula 15: Detect RWX Memory operations (High)
+  - id: python-rwx-memory
+    pattern-either:
+      # 1. Python mmap usage (Standard Library)
+      - patterns:
+          - pattern: mmap.mmap(..., prot=$PROT, ...)
+          - metavariable-regex:
+              metavariable: $PROT
+              regex: ".*(PROT_EXEC|7).*"
+      # 2. Windows: VirtualProtect (Change permission)
+      - patterns:
+          - pattern: ctypes.windll.kernel32.VirtualProtect(..., $FLAG, ...)
+          - metavariable-regex:
+              metavariable: $FLAG
+              regex: ".*(0x40|64).*"
+      # 3. Windows: VirtualAlloc (Allocate with RWX directly)
+      - patterns:
+          - pattern: ctypes.windll.kernel32.VirtualAlloc(..., $FLAG)
+          - metavariable-regex:
+              metavariable: $FLAG
+              regex: ".*(0x40|64).*"
+      # 4. Linux: mprotect (Change permission via libc)
+      - patterns:
+          - pattern: ctypes.CDLL(...).mprotect(..., $PROT)
+          - metavariable-regex:
+              metavariable: $PROT
+              regex: ".*(0x7|7).*"
+    message: "[Python] High: Memory configured as Writable and Executable (RWX). This is often used for unpacking malware."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      risk_score: 85
+      category: memory-manipulation
+
+  # Regula 16: Detect Privilege Escalation (High)
+  - id: python-privilege-escalation
+    pattern-either:
+      - pattern: os.setuid(0)
+      - pattern: os.setgid(0)
+      - pattern: ctypes.windll.advapi32.AdjustTokenPrivileges(...)
+      - pattern: subprocess.call(["sudo", ...])
+    message: "[Python] High: Attempt to escalate privileges (setuid/sudo/Token manipulation)."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      risk_score: 80
+      category: privilege-escalation
+
+  # Regula 17: Detect Anti-Analysis/Anti-Debug (Medium)
+  - id: python-anti-analysis
+    pattern-either:
+      - pattern: sys.gettrace()
+      - pattern: ctypes.windll.kernel32.IsDebuggerPresent()
+      - pattern: ctypes.windll.kernel32.CheckRemoteDebuggerPresent(...)
+      - patterns:
+          - pattern: |
+              if $TIME < $THRESHOLD:
+                  sys.exit(...)
+          - pattern-inside: |
+              $START = time.time()
+              ...
+              time.sleep(...)
+              ...
+              $TIME = time.time() - $START
+    message: "[Python] Medium: Anti-debugging or Anti-sandbox technique detected."
+    languages: [python]
+    severity: WARNING
+    metadata:
+      risk_score: 50
+      category: evasion
+
+  # Regula 18: Network - Hardcoded Public IP (Info)
+  # Detects IPv4 addresses but excludes private ranges (127.x, 10.x, 192.168.x, 172.16-31.x)
+  - id: python-hardcoded-ip
+    patterns:
+      - pattern-regex: "(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"
+      - pattern-not-regex: "127\\.0\\.0\\.1|0\\.0\\.0\\.0|192\\.168\\.|10\\.|172\\.(?:1[6-9]|2[0-9]|3[0-1])\\."
+    message: "[Python] Info: Hardcoded public IP address detected. Verify if this is a legitimate test target or a potential C2 server."
+    languages: [python]
+    severity: INFO
+    metadata:
+      risk_score: 5
+      category: reconnaissance
+
+  # Regula 19: Network - Suspicious File Download (Python Libs)
+  # Detects downloading content and writing it to disk (Dropper behavior)
+  - id: python-suspicious-download
+    pattern-either:
+      - pattern: urllib.request.urlretrieve(...)
+      - patterns:
+          - pattern-inside: |
+               $R = requests.get(...)
+               ...
+          - pattern: open(..., 'wb').write($R.content)
+      - pattern: |
+          with open(..., 'wb') as $F:
+              $F.write(requests.get(...).content)
+      - pattern: |
+             $F = open(..., 'wb')
+             ...
+             $F.write(requests.get(...).content)
+    message: "[Python] Warning: Script downloads files using Python libraries and writes to disk. This serves to persist a second-stage payload."
+    languages: [python]
+    severity: WARNING
+    metadata:
+      risk_score: 40
+      category: malware-dropper
+
+  # Regula 20: Network - Potential Data Exfiltration
+  # Detects sending sensitive environment data over the network
+  - id: python-data-exfiltration
+    pattern-either:
+      - pattern: requests.post(..., data=os.environ, ...)
+      - pattern: requests.post(..., json=os.environ, ...)
+      - pattern: requests.get(..., params=os.environ, ...)
+      - patterns:
+          - pattern-inside: |
+               $DATA = os.environ
+               ...
+          - pattern-either:
+              - pattern: requests.post(..., data=$DATA, ...)
+              - pattern: $SOCK.send($DATA)
+    message: "[Python] Critical: Script sends environment variables over network. This is highly suspicious Data Exfiltration (Info Stealer)."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      risk_score: 90
+      category: data-exfiltration
+
+  # Regula 21: Network - Explicit DNS Resolution (Info)
+  - id: python-dns-lookup
+    pattern-either:
+      - pattern: socket.gethostbyname(...)
+      - pattern: socket.getaddrinfo(...)
+    message: "[Python] Info: Explicit DNS lookup detected. Check if this is necessary for the PoC or used for C2 domain resolution."
+    languages: [python]
+    severity: INFO
+    metadata:
+      risk_score: 5
+      category: reconnaissance
+
+  # Regula 22: Network - Insecure Encrypted Connection (Warning)
+  # Detects disabling SSL verification or using weak SSL context
+  - id: python-insecure-ssl
+    pattern-either:
+      - pattern: requests.get(..., verify=False, ...)
+      - pattern: requests.post(..., verify=False, ...)
+      - pattern: requests.put(..., verify=False, ...)
+      - pattern: requests.delete(..., verify=False, ...)
+      - pattern: requests.head(..., verify=False, ...)
+      - pattern: requests.patch(..., verify=False, ...)
+      - pattern: requests.request(..., verify=False, ...)
+      - pattern: ssl._create_unverified_context(...)
+    message: "[Python] Warning: Insecure SSL connection detected (verify=False). This disables certificate validation."
+    languages: [python]
+    severity: WARNING
+    metadata:
+      risk_score: 20
+      category: network
+
+  # Regula 23: Network - Encrypted Channel Creation (Info)
+  # Detects usage of SSH, SSL/TLS, or Encrypted Sockets
+  - id: python-encrypted-usage
+    pattern-either:
+      - pattern: ssl.wrap_socket(...)
+      - pattern: OpenSSL.SSL.Context(...)
+      - pattern: paramiko.SSHClient(...)
+      - pattern: paramiko.Transport(...)
+    message: "[Python] Info: Encrypted channel creation detected (SSL/SSH). Verify if this is a legitimate tunneling tool or an encrypted C2 channel."
+    languages: [python]
+    severity: INFO
+    metadata:
+      risk_score: 10
+      category: network
+
+  # Regula 24: Network - DNS Exfiltration (Critical)
+  # Detects encoding sensitive data or environment variables into DNS queries
+  - id: python-dns-exfiltration
+    pattern-either:
+      # Pattern 1: Encoding data inside DNS lookup (base64, hex, etc)
+      - pattern: socket.gethostbyname( ... base64.b64encode(...) ... )
+      - pattern: socket.gethostbyname( ... .encode('hex') ... )
+      - pattern: socket.getaddrinfo( ... base64.b64encode(...) ... )
+      # Pattern 2: Sending environment variables via DNS
+      - pattern: socket.gethostbyname( ... os.environ ... )
+      - pattern: socket.getaddrinfo( ... os.environ ... )
+    message: "[Python] Critical: DNS Exfiltration attempt detected. The script is trying to leak data (via Base64/Env vars) using DNS queries."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      risk_score: 95
+      category: data-exfiltration
+
+  # Regula 25: System - Persistence & Configuration Commands (Critical)
+  # Covers: Account creation, Service creation, Task scheduling, Registry via command line
+  - id: python-system-persistence-commands
+    patterns:
+      - pattern-either:
+          - pattern: subprocess.call([$BIN, ...], ...)
+          - pattern: subprocess.run([$BIN, ...], ...)
+          - pattern: subprocess.Popen([$BIN, ...], ...)
+          - pattern: os.system($CMD)
+          - pattern: os.popen($CMD)
+      - pattern-either:
+          - metavariable-regex:
+              metavariable: $BIN
+              regex: "['\"](schtasks|sc|reg|net|useradd|adduser|chattr)['\"]"
+          - metavariable-regex:
+              metavariable: $CMD
+              regex: ".*(schtasks|sc create|reg add|net user|net localgroup|useradd|adduser|chattr).*"
+    message: "[Python] Critical: Script executes system persistence or configuration commands (schtasks/reg/sc/net/useradd)."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      risk_score: 90
+      category: persistence
+
+  # Regula 26: System - Registry Manipulation via Python API (High)
+  # Covers: Modifying system settings via Windows Registry
+  - id: python-registry-manipulation
+    pattern-either:
+      - pattern: winreg.CreateKey(...)
+      - pattern: winreg.SetValue(...)
+      - pattern: winreg.DeleteKey(...)
+      - pattern: winreg.SetValueEx(...)
+    message: "[Python] High: Direct manipulation of Windows Registry detected."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      risk_score: 70
+      category: persistence
+
+  # Regula 27: System - Log Clearing / Covering Tracks (High)
+  # Covers: Deleting logs, clearing event logs
+  - id: python-log-clearing
+    patterns:
+      - pattern-either:
+           - pattern: os.system($CMD)
+           - pattern: subprocess.call([$BIN, ...], ...)
+           - pattern: subprocess.run([$BIN, ...], ...)
+      - pattern-either:
+          - metavariable-regex:
+               metavariable: $CMD
+               regex: ".*(rm .*\\.log|wevtutil cl|Clear-EventLog|truncate -s 0|/dev/null).*"
+          - metavariable-regex:
+               metavariable: $BIN
+               regex: "['\"](wevtutil)['\"]"
+    message: "[Python] High: Attempt to clear system logs or cover tracks detected."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      risk_score: 80
+      category: defense-evasion
+
+  # Regula 28: System - Self Replication (High)
+  # Covers: Worm-like behavior, copying own file
+  - id: python-self-replication
+    pattern-either:
+      - pattern: shutil.copy(__file__, ...)
+      - pattern: shutil.copy2(__file__, ...)
+      - pattern: open(..., 'w').write(open(__file__).read())
+    message: "[Python] High: Self-replication detected. Script copies its own source code."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      risk_score: 80
+      category: worm-propagation
