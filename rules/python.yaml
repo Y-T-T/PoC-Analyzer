@@ -464,20 +464,22 @@ rules:
   # Regula 25: System - Persistence & Configuration Commands (Critical)
   # Covers: Account creation, Service creation, Task scheduling, Registry via command line
   - id: python-system-persistence-commands
-    patterns:
-      - pattern-either:
-          - pattern: subprocess.call([$BIN, ...], ...)
-          - pattern: subprocess.run([$BIN, ...], ...)
-          - pattern: subprocess.Popen([$BIN, ...], ...)
-          - pattern: os.system($CMD)
-          - pattern: os.popen($CMD)
-      - pattern-either:
-          - metavariable-regex:
-              metavariable: $BIN
-              regex: "['\"](schtasks|sc|reg|net|useradd|adduser|chattr)['\"]"
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: os.system($CMD)
+              - pattern: os.popen($CMD)
           - metavariable-regex:
               metavariable: $CMD
               regex: ".*(schtasks|sc create|reg add|net user|net localgroup|useradd|adduser|chattr).*"
+      - patterns:
+          - pattern-either:
+              - pattern: subprocess.call([$BIN, ...], ...)
+              - pattern: subprocess.run([$BIN, ...], ...)
+              - pattern: subprocess.Popen([$BIN, ...], ...)
+          - metavariable-regex:
+              metavariable: $BIN
+              regex: "['\"](schtasks|sc|reg|net|useradd|adduser|chattr)['\"]"
     message: "[Python] Critical: Script executes system persistence or configuration commands (schtasks/reg/sc/net/useradd)."
     languages: [python]
     severity: ERROR
@@ -503,15 +505,16 @@ rules:
   # Regula 27: System - Log Clearing / Covering Tracks (High)
   # Covers: Deleting logs, clearing event logs
   - id: python-log-clearing
-    patterns:
-      - pattern-either:
-           - pattern: os.system($CMD)
-           - pattern: subprocess.call([$BIN, ...], ...)
-           - pattern: subprocess.run([$BIN, ...], ...)
-      - pattern-either:
+    pattern-either:
+      - patterns:
+          - pattern: os.system($CMD)
           - metavariable-regex:
                metavariable: $CMD
                regex: ".*(rm .*\\.log|wevtutil cl|Clear-EventLog|truncate -s 0|/dev/null).*"
+      - patterns:
+          - pattern-either:
+               - pattern: subprocess.call([$BIN, ...], ...)
+               - pattern: subprocess.run([$BIN, ...], ...)
           - metavariable-regex:
                metavariable: $BIN
                regex: "['\"](wevtutil)['\"]"
